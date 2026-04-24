@@ -2754,5 +2754,6 @@ def delete_product_log(product_id, log_id):
 
 if __name__ == '__main__':
     import os
-port = int(os.environ.get("PORT", 10000))
-flask_app.run(host="0.0.0.0", port=port, debug=False)
+    port = int(os.environ.get("PORT", 10000))
+    flask_app.run(host="0.0.0.0", port=port)
+
