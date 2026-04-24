@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><h1>忘記密碼申請</h1><p>主管可在此查看內部與經銷商的忘記密碼申請，並直接重設密碼。</p></div>
+{% if message %}<div class="card">{{ message }}</div>{% endif %}
+<div class="card">
+  <h3>待處理申請</h3>
+  <table class="table small-text dealer-table">
+    <thead><tr><th>類型</th><th>帳號</th><th>名稱</th><th>申請時間</th><th>新密碼</th><th>備註</th><th>操作</th></tr></thead>
+    <tbody>
+      {% for row in pending_rows %}
+      <tr><form method="post">
+        <input type="hidden" name="request_id" value="{{ row.id }}">
+        <td>{{ '內部帳號' if row.account_type == 'internal' else '經銷商' }}</td>
+        <td>{{ row.account_identifier }}</td>
+        <td>{{ row.display_name or '' }}</td>
+        <td>{{ row.created_at.strftime('%Y-%m-%d %H:%M') if row.created_at else '' }}</td>
+        <td><input name="new_password" maxlength="10" placeholder="請輸入新密碼"></td>
+        <td><input name="admin_note" placeholder="處理備註"></td>
+        <td style="white-space:nowrap;">
+          <button type="submit" name="action_type" value="reset">重設密碼</button>
+          <button type="submit" name="action_type" value="reject" style="background:#6b7280;">駁回</button>
+        </td>
+      </form></tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">目前沒有待處理申請。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="card">
+  <h3>最近處理紀錄</h3>
+  <table class="table small-text dealer-table">
+    <thead><tr><th>類型</th><th>帳號</th><th>名稱</th><th>狀態</th><th>處理人</th><th>處理時間</th><th>備註</th></tr></thead>
+    <tbody>
+      {% for row in history_rows %}
+      <tr>
+        <td>{{ '內部帳號' if row.account_type == 'internal' else '經銷商' }}</td>
+        <td>{{ row.account_identifier }}</td>
+        <td>{{ row.display_name or '' }}</td>
+        <td>{{ '已重設' if row.status == 'reset' else '已駁回' }}</td>
+        <td>{{ row.resolved_by or '' }}</td>
+        <td>{{ row.resolved_at.strftime('%Y-%m-%d %H:%M') if row.resolved_at else '' }}</td>
+        <td>{{ row.admin_note or '' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">尚無處理紀錄。</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

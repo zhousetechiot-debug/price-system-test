@@ -1,0 +1,30 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>業務資料</h1>
+    <p>建立業務下拉選單資料。選擇人名後會自動帶入電話與 Email。</p>
+</div>
+<div class="card">
+    <form method="post">
+        <div class="grid-3-lower">
+            <div><label>業務姓名</label><input type="text" name="name" required placeholder="例如 王小明"></div>
+            <div><label>電話</label><input type="text" name="phone"></div>
+            <div><label>Email</label><input type="text" name="email"></div>
+        </div>
+        <div class="button-row" style="margin-top:14px;"><button type="submit">儲存業務資料</button></div>
+    </form>
+</div>
+{% if message %}<div class="alert success">{{ message }}</div>{% endif %}
+<div class="card">
+    <h3>目前業務清單</h3>
+    <table class="table">
+        <thead><tr><th>姓名</th><th>電話</th><th>Email</th></tr></thead>
+        <tbody>
+            {% for r in rows %}
+            <tr><td>{{ r.name }}</td><td>{{ r.phone or '' }}</td><td>{{ r.email or '' }}</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

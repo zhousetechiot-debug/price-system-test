@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><h1>內部權限管理</h1><p>主管可建立總公司帳號與報價專員帳號。主管可查看與修改全部資料；報價專員僅可建立 / 修改報價單。</p></div>
+{% if message %}<div class="card">{{ message }}</div>{% endif %}
+<div class="card">
+  <h3>新增內部帳號</h3>
+  <form method="post" class="dealer-form-grid">
+    <input type="hidden" name="action_type" value="create">
+    <div><label>帳號</label><input name="username" required></div>
+    <div><label>顯示名稱</label><input name="display_name"></div>
+    <div><label>密碼（最多10碼）</label><input name="password" maxlength="10" required></div>
+    <div><label>角色</label><select name="role"><option value="supervisor">主管</option><option value="quote_only" selected>報價專員</option></select></div>
+    <div style="grid-column:1/-1"><button type="submit">新增帳號</button></div>
+  </form>
+</div>
+<div class="card">
+  <table class="table small-text dealer-table">
+    <thead><tr><th>帳號</th><th>顯示名稱</th><th>角色</th><th>新密碼</th><th>啟用</th><th>操作</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr><form method="post">
+        <input type="hidden" name="user_id" value="{{ u.id }}">
+        <td>{{ u.username }}</td>
+        <td><input name="display_name" value="{{ u.display_name or u.username }}" {% if u.username == default_supervisor_username %}readonly{% endif %}></td>
+        <td><select name="role" {% if u.username == default_supervisor_username %}disabled{% endif %}><option value="supervisor" {% if u.role=='supervisor' %}selected{% endif %}>主管</option><option value="quote_only" {% if u.role=='quote_only' %}selected{% endif %}>報價專員</option></select></td>
+        <td><input name="password" maxlength="10" placeholder="留空不變更" {% if u.username == default_supervisor_username %}placeholder="主管自行到修改密碼"{% endif %}></td>
+        <td><input type="checkbox" name="is_active" {% if u.is_active %}checked{% endif %} {% if u.username == default_supervisor_username %}disabled{% endif %}></td>
+        <td style="white-space:nowrap;">
+          {% if u.username != default_supervisor_username %}
+            <button type="submit">儲存</button>
+            {% if u.id != current_internal_user_id %}
+            <button type="submit" name="action_type" value="delete" onclick="return confirm('確定要刪除 {{ u.username }} 嗎？');" style="background:#dc2626;">刪除</button>
+            {% else %}
+            <span class="muted">目前登入中</span>
+            {% endif %}
+          {% else %}<span class="muted">固定主管帳號</span>{% endif %}
+        </td>
+      </form></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

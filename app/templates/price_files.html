@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><h1>年度價格表版本管理</h1><p>每年 6 月上傳新版，7 月開始生效，歷史版本可回查。</p></div>
+{% if message %}<div class="card">{{ message }}</div>{% endif %}
+<div class="card"><form method="post" enctype="multipart/form-data" class="grid-2"><div><label>年度</label><input type="number" name="version_year" value="2026"></div><div><label>生效日</label><input type="date" name="effective_date"></div><div><label>價格表檔案</label><input type="file" name="price_file"></div><div><label>備註</label><input type="text" name="note"></div><div class="button-row"><button type="submit">上傳版本</button></div></form></div>
+<div class="card"><table class="table"><thead><tr><th>年度</th><th>生效日</th><th>檔名</th><th>備註</th><th>建立時間</th></tr></thead><tbody>{% for r in rows %}<tr><td>{{ r.version_year }}</td><td>{{ r.effective_date or '' }}</td><td>{{ r.file_name }}</td><td>{{ r.note or '' }}</td><td>{{ r.created_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

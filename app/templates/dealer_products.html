@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>經銷商價格表</h1>
+  <p>目前登入：{{ dealer.name }}{% if price_level %}，你的等級：{{ price_level }}{% endif %}</p>
+</div>
+<form method="get" action="/dealer/products" class="card">
+  <div class="grid-home-search" style="grid-template-columns: 2fr 1fr 1fr auto;">
+    <div><label>關鍵字</label><input type="text" name="q" value="{{ keyword }}" placeholder="例如型號 / 品名"></div>
+    <div><label>類別</label><select name="category"><option value="">全部</option>{% for c in categories %}<option value="{{ c }}" {% if c == selected_category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    <div><label>狀態</label><select name="status"><option value="">全部</option>{% for s in statuses %}<option value="{{ s }}" {% if s == selected_status %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="actions-bottom"><button type="submit">查詢</button></div>
+  </div>
+</form>
+<div class="card">
+  <div class="section-inline-head"><h3>價格清單</h3><div class="button-row">{% if can_quote %}<a class="button-link secondary" href="/quotes/new">建立我的報價單</a>{% endif %}</div></div>
+  {% if can_export %}
+  <form method="get" action="/dealer/export" class="card" id="dealerExportForm" style="margin-bottom:16px;background:#f8fafc;">
+    <input type="hidden" name="q" value="{{ keyword }}"><input type="hidden" name="category" value="{{ selected_category }}"><input type="hidden" name="status" value="{{ selected_status }}">
+    <div style="margin-bottom:10px;"><strong>匯出價格欄位（依你的經銷等級限制）</strong></div>
+    <div class="multi-select-list" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:12px;">
+      {% for level in allowed_export_levels %}<label class="inline-check"><input type="checkbox" name="export_levels" value="{{ level }}" {% if level in selected_export_levels %}checked{% endif %}> {{ level }}</label>{% endfor %}
+    </div>
+    <div class="multi-select-list" style="grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:12px;">
+      <label class="inline-check"><input type="checkbox" name="include_image" value="1" {% if include_image %}checked{% endif %}> 商品圖片</label>
+      <label class="inline-check"><input type="checkbox" name="include_description" value="1" {% if include_description %}checked{% endif %}> 產品描述</label>
+      <label class="inline-check"><input type="checkbox" name="include_category" value="1" checked> 產品類別</label>
+      <label class="inline-check"><input type="checkbox" name="include_status" value="1"> 狀態</label>
+    </div>
+    <div class="muted">只有勾選的商品會匯出，若未勾選則不匯出。</div><div class="button-row"><button type="submit">匯出 Excel</button></div>
+  </form>
+  {% endif %}
+  <table class="table">
+    <thead><tr><th style="width:44px;"><input type="checkbox" id="dealerCheckAll"></th><th>圖片</th><th>類別</th><th>狀態</th><th>型號</th><th>品名</th><th>產品描述</th><th>單位</th><th>{{ price_level }}</th><th>備註</th></tr></thead>
+    <tbody>{% for p in products %}<tr><td><input type="checkbox" class="dealer-row-check" name="selected_product_ids" value="{{ p.id }}" form="dealerExportForm"></td><td>{% if get_image_src(p) %}<img class="thumb" src="{{ get_image_src(p) }}">{% else %}-{% endif %}</td><td>{{ p.category or '' }}</td><td>{{ p.status or '' }}</td><td>{{ p.model }}</td><td>{{ p.name }}</td><td>{{ p.description or '' }}</td><td>{{ p.unit or '' }}</td><td class="price">{{ '{:,.0f}'.format(get_price_by_level(p, price_level, discount_map) or 0) }}</td><td>{{ p.note or '' }}</td></tr>{% endfor %}</tbody>
+  </table>
+</div>
+<script>window.addEventListener('DOMContentLoaded',()=>{const all=document.getElementById('dealerCheckAll'); const rows=[...document.querySelectorAll('.dealer-row-check')]; if(all){all.addEventListener('change',()=>rows.forEach(cb=>cb.checked=all.checked));}});</script>
+{% endblock %}

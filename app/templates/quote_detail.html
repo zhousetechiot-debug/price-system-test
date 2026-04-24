@@ -1,0 +1,62 @@
+
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header no-print">
+    <h1>報價單</h1>
+    <div class="button-row">
+        <a class="button-link" href="/quotes/{{ quote.id }}/excel">下載 Excel</a>
+        <a class="button-link" href="/quotes/{{ quote.id }}/pdf">下載 PDF</a>
+        <a class="button-link" href="#" onclick="window.print(); return false;">直接列印</a>
+        <a class="button-link secondary" href="/quotes/{{ quote.id }}/edit">修改報價單</a>
+    </div>
+    <p>輸出檔名：{{ output_name }}</p>
+</div>
+<div class="quote-sheet">
+    <div class="quote-header-flex">
+        <div class="quote-logo-box">{% if company_logo_src %}<img src="{{ company_logo_src }}" style="max-width:150px;max-height:68px;object-fit:contain;">{% else %}<div class="muted">公司 Logo</div>{% endif %}</div>
+        <div class="quote-title">報價單</div>
+    </div>
+    <table class="quote-meta">
+        <tr><td class="label">訂購單號</td><td>{{ quote.quote_no }}</td><td></td><td class="label">From</td><td>智崴物聯科技股份有限公司</td></tr>
+        <tr><td class="label">Name :</td><td>{{ quote.customer_name }}</td><td></td><td class="label">Date :</td><td>{{ quote.quote_date }}</td></tr>
+        <tr><td class="label">Contact :</td><td>{{ quote.contact_name or '' }}</td><td></td><td class="label">ATTN :</td><td>{{ quote.attn or '' }}</td></tr>
+        <tr><td class="label">Tel :</td><td>{{ quote.phone or '' }}</td><td></td><td class="label">TEL :</td><td>{{ quote.sales_phone or '' }}</td></tr>
+        <tr><td class="label">Mail :</td><td>{{ quote.email or '' }}</td><td></td><td class="label">Mail :</td><td>{{ quote.sales_email or '' }}</td></tr>
+        <tr><td class="label">Add :</td><td>{{ quote.address or '' }}</td><td></td><td class="label">TEL(O) :</td><td>(02) 2600-7081</td></tr>
+        <tr><td class="label">業務 :</td><td>{{ quote.sales_name or '' }}</td><td></td><td class="label">幣別</td><td>NTD</td></tr>
+    </table>
+    <table class="quote-grid quote-grid-wide">
+        <thead><tr><th>項目</th><th>圖片</th><th>型號</th><th>品名</th><th>數量</th><th>單位</th><th>單價</th><th>總價</th><th>備註</th></tr></thead>
+        <tbody>
+            {% for item in display_items %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{% if item.image_path %}<img class="quote-thumb" src="{{ item.image_path }}">{% endif %}</td>
+                <td>{{ item.model }}</td>
+                <td>{{ item.product_name }}</td>
+                <td>{{ (item.qty or 0)|round|int }}</td>
+                <td>{{ item.unit }}</td>
+                <td>{{ "{:,.0f}".format(item.unit_price_twd) }}</td>
+                <td>{{ "{:,.0f}".format(item.line_total_twd) }}</td>
+                <td>{{ item.note or '' }}</td>
+            </tr>
+            {% endfor %}
+            {% for i in range(12 - display_items|length if display_items|length < 12 else 0) %}
+            <tr class="blank-row"><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <table class="quote-totals quote-totals-wide">
+                <tr><td class="label">未稅小計</td><td>{{ "{:,.0f}".format(quote.subtotal) }}</td></tr>
+        <tr><td class="label">稅額</td><td>{{ "{:,.0f}".format(quote.tax_amount) }}</td></tr>
+        <tr><td class="label">合計</td><td>{{ "{:,.0f}".format(quote.total_amount) }}</td></tr>
+        {% if quote.negotiated_total %}<tr><td class="label">議價後合計</td><td>{{ "{:,.0f}".format(quote.negotiated_total) }}</td></tr>{% endif %}
+        {% if quote.payment_scheme != '一次付清' %}<tr><td class="label">訂金</td><td>{{ "{:,.0f}".format(quote.deposit_1 or 0) }}</td></tr>{% endif %}
+        {% if quote.deposit_2 %}<tr><td class="label">設備進場</td><td>{{ "{:,.0f}".format(quote.deposit_2 or 0) }}</td></tr>{% endif %}
+        {% if quote.deposit_3 and quote.payment_scheme != '一次付清' %}<tr><td class="label">尾款(驗收款)</td><td>{{ "{:,.0f}".format(quote.deposit_3 or 0) }}</td></tr>{% endif %}
+    </table>
+    <div class="quote-bottom-grid">
+        <div class="quote-note-block"><div class="label">整張報價單總備註：</div><pre>{{ quote.note or '' }}</pre><table class="bank-table"><tr><td>付款方式:</td><td>匯款</td></tr><tr><td>戶名:</td><td>智崴物聯科技股份有限公司</td></tr><tr><td>銀行:</td><td>上海商業儲蓄銀行-林口分行</td></tr><tr><td>帳號:</td><td>79102-0000-66086</td></tr></table><div class="sign-row"><div class="sign-title">客戶回簽</div><div class="sign-note">(回簽後, 視同訂單生效)</div></div></div>
+    </div>
+</div>
+{% endblock %}

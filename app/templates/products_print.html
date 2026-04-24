@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>商品總表列印</title>
+<style>
+body{font-family: Arial, "Microsoft JhengHei", sans-serif; font-size:12px; margin:20px}
+table{width:100%; border-collapse:collapse} th,td{border:1px solid #999; padding:6px; vertical-align:top} th{background:#eef3fb}
+img{max-width:42px; max-height:42px}
+@media print {.no-print{display:none}}
+</style>
+</head>
+<body>
+<div class="no-print" style="margin-bottom:12px;"><button onclick="window.print()">列印</button></div>
+<h2>商品總表</h2>
+<table>
+<thead><tr><th>圖片</th><th>類別</th><th>型號</th><th>品名</th><th>產品描述</th><th>成本(TWD)</th><th>成本(USD)</th><th>市場報價</th></tr></thead>
+<tbody>
+{% for p in products %}
+<tr>
+<td>{% if p.image_path or p.image_url %}<img src="{{ p.image_path or p.image_url }}">{% endif %}</td>
+<td>{{ p.category or '' }}</td><td>{{ p.model }}</td><td>{{ p.name }}</td><td>{{ p.description or '' }}</td>
+<td>{{ "{:,.0f}".format(p.final_cost_twd or 0) }}</td><td>US$ {{ "{:.2f}".format((p.final_cost_twd or 0) / usd_rate if usd_rate else 0) }}</td><td>{{ "{:,.0f}".format(p.market_price or 0) }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</body>
+</html>

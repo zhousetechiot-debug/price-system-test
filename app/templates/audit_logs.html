@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>操作紀錄</h1>
+    <p>保留最近 2 年的匯入、修改與匯出紀錄。</p>
+</div>
+<div class="card">
+    <table class="table small-text">
+        <thead><tr><th>時間</th><th>事件</th><th>目標</th><th>編號</th><th>內容</th></tr></thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row.created_at.strftime('%Y-%m-%d %H:%M:%S') if row.created_at else '' }}</td>
+                <td>{{ row.event_type }}</td>
+                <td>{{ row.target_type or '' }}</td>
+                <td>{{ row.target_id or '' }}</td>
+                <td>{{ row.detail or '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

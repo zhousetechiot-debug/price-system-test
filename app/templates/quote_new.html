@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>建立報價單</h1>
+    <p>先選客戶，再勾選商品與數量。若有選經銷商，會自動帶出該等級價格。</p>
+</div>
+
+<form method="post" action="/quotes/new">
+    <div class="card">
+        <div class="grid-2">
+            <div>
+                <label>經銷商（可不選）</label>
+                <select name="dealer_id">
+                    <option value="">未指定 / 走市場報價</option>
+                    {% for d in dealers %}
+                    <option value="{{ d.id }}">{{ d.name }}｜{{ d.level or "未設定" }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>客戶名稱</label>
+                <input type="text" name="customer_name" required>
+            </div>
+            <div>
+                <label>聯絡人</label>
+                <input type="text" name="contact_name">
+            </div>
+            <div>
+                <label>電話</label>
+                <input type="text" name="phone">
+            </div>
+            <div>
+                <label>Email</label>
+                <input type="text" name="email">
+            </div>
+            <div>
+                <label>地址</label>
+                <input type="text" name="address">
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>商品明細</h3>
+        <p>目前為簡化版，先直接輸入需要的數量；數量為 0 就不會加入報價單。</p>
+
+        <table class="table small-text">
+            <thead>
+                <tr>
+                    <th>加入</th>
+                    <th>類別</th>
+                    <th>型號</th>
+                    <th>品名</th>
+                    <th>市場報價</th>
+                    <th>數量</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>
+                        <input type="hidden" name="product_ids" value="{{ p.id }}">
+                        ✓
+                    </td>
+                    <td>{{ p.category or "" }}</td>
+                    <td>{{ p.model }}</td>
+                    <td>{{ p.name }}</td>
+                    <td>{{ "{:,.0f}".format(p.market_price or 0) }}</td>
+                    <td><input type="number" name="qtys" value="0" min="0"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <label>備註</label>
+        <textarea name="note" rows="5" placeholder="可輸入付款方式、施工說明、備註內容"></textarea>
+        <button type="submit">建立報價單</button>
+    </div>
+</form>
+{% endblock %}

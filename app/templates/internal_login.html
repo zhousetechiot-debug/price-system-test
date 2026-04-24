@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><h1>內部登入</h1></div>
+<form method="post" class="card" style="max-width:520px;">
+  <label>內部帳號</label>
+  <input type="text" name="username" placeholder="請輸入帳號" value="{{ username_value or '' }}" required>
+  <label>內部密碼</label>
+  <input type="password" name="password" placeholder="請輸入密碼" maxlength="10" required>
+  {% if error %}<p style="color:#d33;">{{ error }}</p>{% endif %}
+  <div class="actions-bottom" style="justify-content:space-between;align-items:center;">
+    <a href="/forgot-password?mode=internal" class="button-link secondary">忘記密碼</a>
+    <button type="submit">登入</button>
+  </div>
+</form>
+{% endblock %}

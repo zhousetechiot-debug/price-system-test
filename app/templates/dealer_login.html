@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><h1>經銷商登入</h1><p>請輸入經銷商統一編號與登入密碼。</p></div>
+<form method="post" class="card" style="max-width:680px;">
+  <label>統一編號（帳號）</label>
+  <input type="text" name="tax_id" placeholder="請輸入統一編號" inputmode="numeric" maxlength="10" value="{{ tax_id_value or '' }}" required>
+  <label>登入密碼</label>
+  <input type="password" name="access_key" placeholder="請輸入密碼" maxlength="10" required>
+  {% if error %}<p style="color:#d33;">{{ error }}</p>{% endif %}
+  <div class="actions-bottom" style="justify-content:space-between;align-items:center;">
+    <a href="/forgot-password?mode=dealer" class="button-link secondary">忘記密碼</a>
+    <button type="submit">登入</button>
+  </div>
+</form>
+{% endblock %}

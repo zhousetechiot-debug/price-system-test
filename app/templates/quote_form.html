@@ -1,0 +1,671 @@
+{% extends "base.html" %}
+{% block content %}
+{% set fd = form_defaults or {} %}
+<style>
+  .page-header h1 { margin-bottom: 8px; }
+  .page-header p { color:#64748b; margin-bottom:20px; }
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;margin-bottom:20px;}
+  .card h3{margin:0 0 16px 0;font-size:1.2rem;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+  .field label{display:block;font-weight:700;margin-bottom:8px;}
+  .field input,.field select,.field textarea{width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid #cbd5e1;border-radius:14px;font-size:15px;}
+  .field textarea{min-height:88px;resize:vertical;}
+  .section-inline-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+  .muted{color:#64748b;font-size:14px;}
+  .button-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .button-link,.primary-btn,.secondary-btn{border:none;border-radius:14px;padding:10px 14px;cursor:pointer;font-weight:700;}
+  .button-link,.primary-btn{background:#2563eb;color:#fff;}
+  .secondary-btn{background:#fff;color:#0f172a;border:1px solid #cbd5e1;}
+  .table-wrap{overflow-x:auto;}
+  table.clean-table{width:100%;border-collapse:separate;border-spacing:0 10px;}
+  table.clean-table thead th{text-align:left;font-weight:700;padding:0 10px 6px;color:#0f172a;white-space:nowrap;}
+  table.clean-table tbody td{padding:0 10px;vertical-align:top;}
+  table.clean-table input,table.clean-table select,table.clean-table textarea{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cbd5e1;border-radius:14px;font-size:15px;}
+  table.clean-table textarea{min-height:52px;resize:vertical;}
+  .thumb{width:52px;height:52px;object-fit:contain;border-radius:10px;border:1px solid #e5e7eb;background:#fff;display:block;}
+  .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .summary-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:14px;}
+  .summary-label{color:#64748b;font-size:14px;margin-bottom:6px;}
+  .summary-value{font-size:1.8rem;font-weight:700;line-height:1;}
+  .note-textarea{min-height:180px;}
+  .price{color:#dc2626;font-weight:700;}
+  .hidden{display:none !important;}
+  .inline-stack{display:flex;flex-direction:column;gap:8px;}
+  @media (max-width:1024px){.grid-2,.grid-3,.summary-grid{grid-template-columns:1fr;}}
+</style>
+
+<div class="page-header">
+  <h1>{% if quote %}修改報價單{% else %}建立報價單{% endif %}</h1>
+  <p>先建立客戶與業務資料，再建立產品明細、電動窗簾與工費；可匯入系統內舊報價或 Excel 舊報價單後直接修改。</p>
+</div>
+
+<form id="quote-import-form" method="post" action="/quotes/import_excel" enctype="multipart/form-data"></form>
+
+<form method="post" action="{% if quote %}/quotes/{{ quote.id }}/edit{% else %}/quotes/new{% endif %}" id="quote-form">
+  <input type="hidden" name="action_type" value="save">
+
+  <div class="card">
+    <h3>客戶資料</h3>
+    {% if import_error %}<div class="alert" style="margin-bottom:12px;">舊報價 Excel 匯入失敗：{{ import_error }}</div>{% endif %}
+    {% if save_error %}<div class="alert" style="margin-bottom:12px;">{{ save_error }}</div>{% endif %}
+
+    <div class="grid-2" style="margin-bottom:16px;align-items:end;">
+      <div class="field">
+        <label>匯入系統內舊報價</label>
+        <select id="existing_quote_selector">
+          <option value="">不匯入</option>
+          {% for q in existing_quotes %}
+          <option value="{{ q.id }}">{{ q.quote_no }}｜{{ q.customer_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>匯入 Excel 舊報價單</label>
+        <div class="button-row">
+          <input type="file" name="quote_excel" id="quote_excel" form="quote-import-form" accept=".xlsx,.xlsm,.xls">
+          <button type="submit" class="button-link" form="quote-import-form">開始匯入</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="field">
+        {% if dealer_mode %}
+        <label>經銷商</label>
+        <input type="hidden" name="dealer_id" id="dealer_id" value="{{ dealer_fixed.id if dealer_fixed else '' }}">
+        <input type="text" value="{{ dealer_fixed.name if dealer_fixed else '' }}｜{{ dealer_fixed.level if dealer_fixed else '' }}" readonly>
+        {% else %}
+        <label>經銷商（可不選）</label>
+        <select name="dealer_id" id="dealer_id">
+          <option value="">未指定</option>
+          {% for d in dealers %}
+          <option value="{{ d.id }}" data-level="{{ d.level or '市場報價' }}" {% if quote and quote.dealer_id==d.id %}selected{% endif %}>{{ d.name }}｜{{ d.level or '未設定' }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+      </div>
+      <div class="field">
+        <label>報價日期</label>
+        <input type="date" name="quote_date" value="{{ (quote.quote_date|string) if quote else (fd.get('quote_date', today_str)) }}">
+      </div>
+      <div class="field">
+        <label>客戶名稱</label>
+        <input type="text" name="customer_name" value="{{ quote.customer_name if quote else fd.get('customer_name','') }}" placeholder="一般客戶可自行輸入，選擇經銷商後會自動帶入">
+      </div>
+      <div class="field">
+        <label>客戶聯絡人 *</label>
+        <input type="text" name="contact_name" value="{{ quote.contact_name if quote else fd.get('contact_name','') }}" required>
+      </div>
+      <div class="field">
+        <label>客戶電話</label>
+        <input type="text" name="phone" value="{{ quote.phone if quote else fd.get('phone','') }}">
+      </div>
+      <div class="field">
+        <label>客戶 Email</label>
+        <input type="text" name="email" value="{{ quote.email if quote else fd.get('email','') }}">
+      </div>
+      <div class="field">
+        <label>客戶地址</label>
+        <input type="text" name="address" value="{{ quote.address if quote else fd.get('address','') }}">
+      </div>
+      <div class="field">
+        <label>價格等級</label>
+        <select name="price_level" id="price_level">
+          {% for level in price_levels %}
+          <option value="{{ level }}" {% if (quote and quote.price_level == level) or (not quote and ((fd.get('price_level')==level) or (not fd and level=='市場報價'))) %}selected{% endif %}>{{ level }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>業務資料</h3>
+    <div class="grid-2">
+      <div class="field">
+        <label>選擇業務</label>
+        <select id="sales_selector">
+          <option value="">請選擇業務</option>
+          {% for s in sales_people %}
+          <option value="{{ s.name }}" data-phone="{{ s.phone or '' }}" data-email="{{ s.email or '' }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>ATTN</label>
+        <input type="text" name="attn" value="{{ quote.attn if quote else '' }}">
+      </div>
+      <div class="field">
+        <label>業務姓名</label>
+        <input type="text" name="sales_name" id="sales_name" value="{{ quote.sales_name if quote else fd.get('sales_name','') }}">
+      </div>
+      <div class="field">
+        <label>業務電話</label>
+        <input type="text" name="sales_phone" id="sales_phone" value="{{ quote.sales_phone if quote else fd.get('sales_phone','') }}">
+      </div>
+      <div class="field">
+        <label>業務 Email</label>
+        <input type="text" name="sales_email" id="sales_email" value="{{ quote.sales_email if quote else fd.get('sales_email','') }}">
+      </div>
+      <div class="field">
+        <label>報價單號</label>
+        <input type="text" name="quote_no" value="{{ quote.quote_no if quote else fd.get('quote_no','') }}" placeholder="可留空自動生成">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-inline-head">
+      <h3 style="margin:0;">報價單產品明細</h3>
+      <button type="button" class="button-link" id="add-row-btn">＋新增列</button>
+    </div>
+    <div class="muted" style="margin-bottom:10px;">一次顯示 10 列，可直接輸入型號或品名進行篩選；不會強制覆蓋你的輸入內容。</div>
+    <div class="table-wrap">
+      <table class="clean-table">
+        <thead>
+          <tr>
+            <th style="width:50px;">#</th>
+            <th style="width:260px;">請選擇商品</th>
+            <th style="width:70px;">圖片</th>
+            <th style="width:90px;">類別</th>
+            <th style="width:120px;">型號</th>
+            <th style="width:140px;">品名</th>
+            <th style="width:110px;">市場報價</th>
+            <th style="width:120px;">數量</th>
+            <th>備註</th>
+          </tr>
+        </thead>
+        <tbody id="quote-item-body"></tbody>
+      </table>
+    </div>
+    <datalist id="product-options">
+      {% for p in products %}
+      <option value="{{ p.name }}">{{ p.model }}</option>
+      {% endfor %}
+    </datalist>
+  </div>
+
+  <div class="card">
+    <div class="section-inline-head">
+      <h3 style="margin:0;">電動窗簾報價</h3>
+      <button type="button" id="add-curtain-row" class="button-link">＋新增窗簾列</button>
+    </div>
+    <div class="muted" style="margin-bottom:10px;">一列一窗，預設 2 列；空間與備註都可選單或手動輸入。</div>
+    <div class="table-wrap">
+      <table class="clean-table">
+        <thead>
+          <tr>
+            <th>空間</th>
+            <th>窗簾類型</th>
+            <th style="width:84px;">道數</th>
+            <th>馬達價格</th>
+            <th>軌道單價</th>
+            <th style="width:120px;">軌道長度(cm)</th>
+            <th style="width:110px;">布寬(cm)</th>
+            <th style="width:110px;">布高(cm)</th>
+            <th>布單價</th>
+            <th>總價</th>
+            <th>備註</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="curtainBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-inline-head">
+      <h3 style="margin:0;">工費計算</h3>
+      <button type="button" class="button-link" id="add-custom-fee-btn">＋新增工費列</button>
+    </div>
+    <div class="card" style="margin-bottom:16px;background:#f8fafc;border:1px solid #dbeafe;"><h4 style="margin:0 0 12px 0;">規劃費 / 設定費輸入區</h4><div class="grid-2"><div class="field"><label>規劃費倍數</label><input type="number" id="planning_multiplier" name="planning_multiplier" step="0.01" value="{{ quote.planning_multiplier if quote else 1 }}"></div><div class="field"><label>設定費倍數</label><input type="number" id="setup_multiplier" name="setup_multiplier" step="0.01" value="{{ quote.setup_multiplier if quote else 1 }}"></div></div></div><div class="grid-1" style="margin-bottom:16px;">
+      <div class="field"><label>派工選項</label><select id="dispatch_label" name="dispatch_label">{% for label, amount in dispatch_options %}<option value="{{ label }}" data-fee="{{ amount }}" {% if (quote and quote.dispatch_label==label) or (not quote and label=='不派工') %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="table-wrap">
+      <table class="clean-table">
+        <thead>
+          <tr><th>項目</th><th>數量</th><th>單位</th><th>單價 / 費用</th><th>總價</th><th>說明</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>門鎖施工</td>
+            <td><input type="number" id="lock_install_qty" name="lock_install_qty" min="0" step="1" value="{{ quote.lock_install_qty if quote else 0 }}"></td>
+            <td><input type="text" value="把" readonly></td>
+            <td><select id="lock_install_unit_price" name="lock_install_unit_price" class="select-on-focus">{% for v in [3800,4500,4800,5000] %}<option value="{{ v }}" {% if quote and quote.lock_install_unit_price==v %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></td>
+            <td><input type="text" id="lock_install_fee_preview_inline" readonly value="0"></td>
+            <td><input type="text" value="每把鎖工費快速計算" readonly></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>窗簾施工</td>
+            <td><input type="number" id="curtain_install_qty" name="curtain_install_qty" step="1" value="{{ quote.curtain_install_qty if quote else 0 }}"></td>
+            <td><input type="text" id="curtain_install_unit" name="curtain_install_unit" value="組" readonly></td>
+            <td><input type="number" id="curtain_install_amount" name="curtain_install_amount" step="1" class="select-on-focus" value="{{ quote.curtain_install_amount if quote else 1500 }}"></td>
+            <td><input type="text" id="curtain_install_total_preview" readonly value="0"></td>
+            <td><input type="text" value="窗簾施工" readonly></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>弱電費用</td>
+            <td><input type="number" id="weak_current_qty" name="weak_current_qty" step="1" value="{{ quote.weak_current_qty if quote else 0 }}"></td>
+            <td><input type="text" id="weak_current_unit" name="weak_current_unit" value="{{ quote.weak_current_unit if quote else '式' }}"></td>
+            <td><input type="number" id="weak_current_amount" name="weak_current_amount" step="1" class="select-on-focus" value="{{ quote.weak_current_amount if quote else 0 }}"></td>
+            <td><input type="text" id="weak_current_total_preview" readonly value="0"></td>
+            <td><input type="text" value="弱電材料與施工整體費用" readonly></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>五金材料</td>
+            <td><input type="number" id="hardware_qty" name="hardware_qty" step="1" value="{{ quote.hardware_qty if quote else 0 }}"></td>
+            <td><input type="text" id="hardware_unit" name="hardware_unit" value="{{ quote.hardware_unit if quote else '式' }}"></td>
+            <td><input type="number" id="hardware_amount" name="hardware_amount" step="1" class="select-on-focus" value="{{ quote.hardware_amount if quote else 0 }}"></td>
+            <td><input type="text" id="hardware_total_preview" readonly value="0"></td>
+            <td><input type="text" value="螺絲、固定片、耗材等" readonly></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>水電費用</td>
+            <td><input type="number" id="water_elec_qty" name="water_elec_qty" step="1" value="{{ quote.water_elec_qty if quote else 0 }}"></td>
+            <td><input type="text" id="water_elec_unit" name="water_elec_unit" value="{{ quote.water_elec_unit if quote else '式' }}"></td>
+            <td><input type="number" id="water_elec_amount" name="water_elec_amount" step="1" class="select-on-focus" value="{{ quote.water_elec_amount if quote else 0 }}"></td>
+            <td><input type="text" id="water_elec_total_preview" readonly value="0"></td>
+            <td><input type="text" value="外部水電配合施工費用" readonly></td>
+            <td></td>
+          </tr>
+        </tbody>
+        <tbody id="customFeeBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>建立前預覽</h3>
+    <div class="summary-grid">
+      <div class="summary-box"><div class="summary-label">產品合計</div><div class="summary-value" id="product_subtotal_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">規劃費合計</div><div class="summary-value" id="planning_fee_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">設定費合計</div><div class="summary-value" id="setup_fee_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">派工費</div><div class="summary-value" id="dispatch_fee_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">電動窗簾合計</div><div class="summary-value" id="curtain_total_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">其他工費合計</div><div class="summary-value" id="extra_fee_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">未稅小計</div><div class="summary-value" id="subtotal_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">稅額</div><div class="summary-value" id="tax_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">含稅合計</div><div class="summary-value" id="total_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">折扣百分比試算（含稅）</div><input type="number" id="negotiated_discount_pct" placeholder="例如 80 = 8折" style="width:100%;"></div>
+      <div class="summary-box"><div class="summary-label">議價欄位（含稅，手動KEY IN）</div><input type="number" id="negotiated_total" name="negotiated_total" placeholder="可手動輸入議價後總價" style="width:100%;"></div>
+      <div class="summary-box"><div class="summary-label">議價後合計</div><div class="summary-value" id="negotiated_total_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">收款方式</div><div class="summary-value" id="payment_scheme_preview" style="font-size:1.25rem;">一次付清</div></div>
+      <div class="summary-box"><div class="summary-label">訂金</div><div class="summary-value" id="deposit1_preview">0</div></div>
+      <div class="summary-box" id="deposit2_box"><div class="summary-label">設備進場</div><div class="summary-value" id="deposit2_preview">0</div></div>
+      <div class="summary-box"><div class="summary-label">尾款（驗收款）</div><div class="summary-value" id="deposit3_preview">0</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>整張報價單總備註（會自動整理所選商品備註，可再手動修改）</h3>
+    <div class="field"><textarea name="note" id="note_text" class="note-textarea">{{ quote.note if quote else note_text }}</textarea></div>
+  </div>
+
+  <div class="button-row"><button type="submit" class="button-link">正式建立報價單</button></div>
+</form>
+
+<template id="productRowTemplate">
+  <tr class="quote-row">
+    <td class="row-index"></td>
+    <td><input list="product-options" class="product-search" placeholder="請選擇商品"><input type="hidden" name="product_ids" class="product-id"></td>
+    <td><img class="thumb row-thumb hidden"></td>
+    <td class="row-category"></td>
+    <td class="row-model"></td>
+    <td class="row-name"></td>
+    <td class="row-price price"></td>
+    <td><input type="number" name="qtys" class="qty-input" min="0" value="0"></td>
+    <td><textarea name="item_notes" class="item-note" rows="2"></textarea></td>
+  </tr>
+</template>
+
+<template id="curtainRowTemplate">
+  <tr class="curtain-row">
+    <td><input name="curtain_space[]" list="spaceOptions" placeholder="空間"></td>
+    <td><select name="curtain_type[]"><option>蛇型簾</option><option>皮帶簾</option><option>風琴簾</option><option>捲簾</option><option>木百葉</option><option>鋁百葉</option><option>穿透簾</option><option>夢幻簾</option></select></td>
+    <td><input class="curtain-qty narrow-2 select-on-focus" name="curtain_tracks[]" type="number" step="1" min="0" max="99" value="0"></td>
+    <td><input class="curtain-motor select-on-focus" name="curtain_motor_price[]" type="number" step="1" min="0" value="0"></td>
+    <td><input class="curtain-track-price select-on-focus" name="curtain_track_unit_price[]" type="number" step="1" min="0" value="0"></td>
+    <td><input class="curtain-track-length select-on-focus" name="curtain_track_length[]" type="number" step="1" min="0" value="0"></td>
+    <td><input class="curtain-width select-on-focus" name="curtain_width[]" type="number" step="1" min="0" value="0"></td>
+    <td><input class="curtain-height select-on-focus" name="curtain_height[]" type="number" step="1" min="0" value="0"></td>
+    <td><input class="curtain-cloth-price select-on-focus" name="curtain_cloth_price[]" type="number" step="1" min="0" value="0"></td>
+    <td><input class="curtain-total" name="curtain_total[]" type="number" step="1" min="0" value="0" readonly></td>
+    <td><input name="curtain_note[]" list="curtainNoteOptions" placeholder="可選或手動輸入"></td>
+    <td><button type="button" class="secondary-btn remove-row">刪除</button></td>
+  </tr>
+</template>
+
+<template id="customFeeRowTemplate">
+  <tr class="custom-fee-row">
+    <td><input name="custom_fee_name[]" placeholder="例如：特殊施工"></td>
+    <td><input class="fee-qty select-on-focus" name="custom_fee_qty[]" type="number" step="1" value="1"></td>
+    <td><input name="custom_fee_unit[]" placeholder="式"></td>
+    <td><input class="fee-unit-price select-on-focus" name="custom_fee_unit_price[]" type="number" step="1" value="0"></td>
+    <td><input class="fee-total select-on-focus" name="custom_fee_total[]" type="number" step="1" value="0"></td>
+    <td><input name="custom_fee_note[]" placeholder="說明"></td>
+    <td><button type="button" class="secondary-btn remove-row">刪除</button></td>
+  </tr>
+</template>
+
+<datalist id="spaceOptions">
+  <option>客廳</option><option>主臥</option><option>次臥1</option><option>次臥2</option><option>書房</option><option>飯廳</option><option>廚房</option><option>更衣室</option><option>玄關</option><option>陽台</option><option>其他</option>
+</datalist>
+<datalist id="curtainNoteOptions"><option>布+軌道+馬達</option><option>軌道+馬達</option></datalist>
+
+<script>
+(function(){
+  document.getElementById('quote-form').addEventListener('keydown', function(e){ if(e.key === 'Enter' && e.target.tagName !== 'TEXTAREA'){ e.preventDefault(); } });
+  const productJson = {{ product_json|safe }} || [];
+  const productMap = {};
+  productJson.forEach(p => productMap[String(p.id)] = p);
+  const body = document.getElementById('quote-item-body');
+  const curtainBody = document.getElementById('curtainBody');
+  const customFeeBody = document.getElementById('customFeeBody');
+  const priceLevelSelect = document.getElementById('price_level');
+  const dealerSelect = document.getElementById('dealer_id');
+  const dispatchSelect = document.getElementById('dispatch_label');
+  const initialRows = {{ initial_rows|safe if initial_rows else '[]' }};
+  const initialCustomFees = {{ initial_custom_fees|safe if initial_custom_fees else '[]' }};
+  const initialCurtainRows = {{ initial_curtain_rows|safe if initial_curtain_rows else '[]' }};
+
+  function fmtInt(n){ return Math.round(Number(n || 0)).toLocaleString(); }
+  function getRows(){ return Array.from(body.querySelectorAll('.quote-row')); }
+  function rebuildIndices(){ getRows().forEach((tr, idx) => tr.querySelector('.row-index').textContent = idx + 1); }
+  function fuzzyProduct(text){
+    const q = String(text || '').trim().toLowerCase();
+    if (!q) return null;
+    return productJson.find(p =>
+      String(p.model||'').toLowerCase() === q ||
+      String(p.name||'').toLowerCase() === q ||
+      String(p.model||'').toLowerCase().includes(q) ||
+      String(p.name||'').toLowerCase().includes(q)
+    ) || null;
+  }
+  function selectedRows(){
+    return getRows().map(tr => {
+      const p = productMap[tr.querySelector('.product-id').value];
+      return { p, qty: Number(tr.querySelector('.qty-input').value || 0), note: tr.querySelector('.item-note').value || '' };
+    }).filter(x => x.p && x.qty > 0);
+  }
+  function rebuildOverallNote(){
+    const notes = [];
+    selectedRows().forEach(r => {
+      const t = String(r.note || '').trim();
+      if (t && !notes.includes(t)) notes.push(t);
+    });
+    const base = `1.報價支付方式\n   總價低於15萬，訂金60% 尾款40%。\n   總價高於15萬，訂金30% 設備進場40% 尾款30%。\n2.若開立支票請開立即期票。\n3.報價內容不含水電工程。(例:開關、燈具安裝)\n4.自驗收發票日起算保固1年(非人為損壞)。\n5.報價有效期自報價日起14日曆天止。\n6.客製化設備交期為8週。\n7.代購商品需全額支付，恕不退換。`;
+    const tx = document.getElementById('note_text');
+    if (tx.dataset.manualTouched === '1') return;
+    tx.value = (notes.length ? ('商品備註：\n- ' + notes.join('\n- ') + '\n\n') : '') + base;
+  }
+  function bindProductRow(tr){
+    const hidden = tr.querySelector('.product-id');
+    const search = tr.querySelector('.product-search');
+    const note = tr.querySelector('.item-note');
+    const thumb = tr.querySelector('.row-thumb');
+    function refresh(seedNote){
+      const p = productMap[hidden.value];
+      tr.querySelector('.row-category').textContent = p ? (p.category || '') : '';
+      tr.querySelector('.row-model').textContent = p ? (p.model || '') : '';
+      tr.querySelector('.row-name').textContent = p ? (p.name || '') : '';
+      tr.querySelector('.row-price').textContent = p ? fmtInt((p.prices || {})[priceLevelSelect.value] || 0) : '';
+      if (p && (p.image_url || p.image)) { thumb.src = (p.image_url || p.image); thumb.classList.remove('hidden'); } else { thumb.classList.add('hidden'); }
+      if (p) {
+        note.value = p.note || '';
+        delete note.dataset.manualTouched;
+      } else {
+        note.value = '';
+        delete note.dataset.manualTouched;
+      }
+      recalc();
+    }
+    search.addEventListener('input', ()=>{ const p=fuzzyProduct(search.value); hidden.value = p ? p.id : ''; refresh(true); });
+    search.addEventListener('keydown', e=>{ if ((e.key==='Backspace'||e.key==='Delete') && !search.value) { hidden.value=''; refresh(true); } });
+    search.addEventListener('change', ()=>{ const p=fuzzyProduct(search.value); hidden.value = p ? p.id : ''; refresh(true); });
+    tr.querySelector('.qty-input').addEventListener('input', recalc);
+    note.addEventListener('input', ()=>{ note.dataset.manualTouched='1'; rebuildOverallNote(); });
+    tr.refresh = refresh;
+  }
+  function createRow(rowData = {}){
+    const tpl = document.getElementById('productRowTemplate');
+    const tr = tpl.content.firstElementChild.cloneNode(true);
+    body.appendChild(tr);
+    tr.querySelector('.product-search').value = rowData.search || '';
+    tr.querySelector('.product-id').value = rowData.product_id || '';
+    tr.querySelector('.qty-input').value = rowData.qty || 0;
+    tr.querySelector('.item-note').value = rowData.note || '';
+    if (rowData.note) tr.querySelector('.item-note').dataset.manualTouched = '1';
+    bindProductRow(tr);
+    if (rowData.product_id && productMap[String(rowData.product_id)]) {
+      const p = productMap[String(rowData.product_id)];
+      tr.querySelector('.product-search').value = rowData.search || p.model || p.name;
+    }
+    tr.refresh(true);
+    rebuildIndices();
+  }
+  function ensureRows(count){ while (getRows().length < count) createRow({ qty: 0 }); }
+  function bindCurtainRow(tr){
+    tr.querySelectorAll('input,select').forEach(el => {
+      el.addEventListener('input', ()=>calcCurtainRow(tr));
+      el.addEventListener('change', ()=>calcCurtainRow(tr));
+    });
+    tr.querySelector('.remove-row').addEventListener('click', ()=>{ tr.remove(); refreshSummary(); });
+    calcCurtainRow(tr);
+  }
+  function calcCurtainRow(tr){
+    const qtyInput = tr.querySelector('.curtain-qty');
+    const motorInput = tr.querySelector('.curtain-motor');
+    const trackPriceInput = tr.querySelector('.curtain-track-price');
+    const trackLengthInput = tr.querySelector('.curtain-track-length');
+    const widthInput = tr.querySelector('.curtain-width');
+    const heightInput = tr.querySelector('.curtain-height');
+    const clothPriceInput = tr.querySelector('.curtain-cloth-price');
+
+    const qty = Math.max(0, Math.round(parseFloat(qtyInput.value || 0))); qtyInput.value = qty;
+    const motor = Math.max(0, Math.round(parseFloat(motorInput.value || 0))); if (document.activeElement !== motorInput) motorInput.value = motor;
+    const trackPrice = Math.max(0, Math.round(parseFloat(trackPriceInput.value || 0))); if (document.activeElement !== trackPriceInput) trackPriceInput.value = trackPrice;
+    const trackLength = Math.max(0, Math.round(parseFloat(trackLengthInput.value || 0))); if (document.activeElement !== trackLengthInput) trackLengthInput.value = trackLength;
+    const width = Math.max(0, Math.round(parseFloat(widthInput.value || 0))); if (document.activeElement !== widthInput) widthInput.value = width;
+    const height = Math.max(0, Math.round(parseFloat(heightInput.value || 0))); if (document.activeElement !== heightInput) heightInput.value = height;
+    const clothPrice = Math.max(0, Math.round(parseFloat(clothPriceInput.value || 0))); if (document.activeElement !== clothPriceInput) clothPriceInput.value = clothPrice;
+
+    const trackUnits = Math.ceil(trackLength / 30);
+    const trackTotal = trackPrice * trackUnits;
+    const clothArea = Math.ceil((width * height) / 900);
+    const clothTotal = clothArea > 0 ? clothArea * clothPrice : 0;
+    const total = motor + trackTotal + clothTotal;
+
+    tr.querySelector('.curtain-total').value = Math.max(0, Math.round(total));
+    refreshSummary();
+  }
+  function addCurtainRow(){
+    const tpl = document.getElementById('curtainRowTemplate');
+    const tr = tpl.content.firstElementChild.cloneNode(true);
+    curtainBody.appendChild(tr);
+    bindCurtainRow(tr);
+  }
+  function bindFeeRow(tr){
+    function recalcFee(){
+      const qtyInput = tr.querySelector('.fee-qty'); const qty = Math.max(0, Math.round(parseFloat(qtyInput.value || 0))); if (document.activeElement !== qtyInput) qtyInput.value = qty;
+      const unitInput = tr.querySelector('.fee-unit-price'); const unit = Math.max(0, Math.round(parseFloat(unitInput.value || 0))); if (document.activeElement !== unitInput) unitInput.value = unit;
+      const totalInput = tr.querySelector('.fee-total');
+      if (document.activeElement !== totalInput) totalInput.value = Math.round(qty * unit);
+      refreshSummary();
+    }
+    tr.querySelectorAll('input').forEach(el => { el.addEventListener('input', recalcFee); el.addEventListener('change', recalcFee); });
+    tr.querySelector('.remove-row').addEventListener('click', ()=>{ tr.remove(); refreshSummary(); });
+    recalcFee();
+  }
+  function createCustomFeeRow(data = {}){
+    const tpl = document.getElementById('customFeeRowTemplate');
+    const tr = tpl.content.firstElementChild.cloneNode(true);
+    customFeeBody.appendChild(tr);
+    tr.querySelector('[name="custom_fee_name[]"]').value = data.name || '';
+    tr.querySelector('[name="custom_fee_qty[]"]').value = Math.round(data.qty || 1);
+    tr.querySelector('[name="custom_fee_unit[]"]').value = data.unit || '';
+    tr.querySelector('[name="custom_fee_unit_price[]"]').value = Math.round(data.unit_price || 0);
+    tr.querySelector('[name="custom_fee_total[]"]').value = Math.round(data.total || 0);
+    tr.querySelector('[name="custom_fee_note[]"]').value = data.note || '';
+    bindFeeRow(tr);
+  }
+  function refreshSummary(){ recalc(); }
+  function recalc(){
+    let productSubtotal = 0, planning = 0, setup = 0;
+    const level = priceLevelSelect.value || '市場報價';
+    const pm = Number(document.getElementById('planning_multiplier').value || 1) || 1;
+    const sm = Number(document.getElementById('setup_multiplier').value || 1) || 1;
+    getRows().forEach(tr => {
+      const p = productMap[tr.querySelector('.product-id').value];
+      const qty = Number(tr.querySelector('.qty-input').value || 0);
+      if (p && qty > 0) {
+        productSubtotal += Math.round(((p.prices || {})[level] || 0) * qty);
+        planning += Math.round((p.planning_fee || 0) * pm * qty);
+        setup += Math.round((p.setup_fee || 0) * sm * qty);
+      }
+      if (p) tr.querySelector('.row-price').textContent = fmtInt(((p.prices || {})[level] || 0));
+    });
+    const dispatchFee = Number(dispatchSelect.options[dispatchSelect.selectedIndex]?.dataset.fee || 0);
+    const lockFee = Math.round(Number(document.getElementById('lock_install_qty').value || 0) * Number(document.getElementById('lock_install_unit_price').value || 0));
+    document.getElementById('lock_install_fee_preview_inline').value = fmtInt(lockFee);
+    const curtainInstallQty = Array.from(curtainBody.querySelectorAll('[name="curtain_tracks[]"]')).reduce((a,el)=>a + (Math.round(Number(el.value||0))||0),0);
+    const curtainInstallUnit = Number(document.getElementById('curtain_install_amount').value || 1500);
+    document.getElementById('curtain_install_qty').value = curtainInstallQty;
+    const curtainInstallFee = Math.round(curtainInstallQty * curtainInstallUnit);
+    document.getElementById('curtain_install_total_preview').value = fmtInt(curtainInstallFee);
+    const weakFee = Math.round(Number(document.getElementById('weak_current_amount').value || 0) * Number(document.getElementById('weak_current_qty').value || 0));
+    document.getElementById('weak_current_total_preview').value = fmtInt(weakFee);
+    const hardwareFee = Math.round(Number(document.getElementById('hardware_amount').value || 0) * Number(document.getElementById('hardware_qty').value || 0));
+    document.getElementById('hardware_total_preview').value = fmtInt(hardwareFee);
+    const waterFee = Math.round(Number(document.getElementById('water_elec_amount').value || 0) * Number(document.getElementById('water_elec_qty').value || 0));
+    document.getElementById('water_elec_total_preview').value = fmtInt(waterFee);
+    let curtainFee = 0; curtainBody.querySelectorAll('.curtain-total').forEach(el => curtainFee += Number(el.value || 0));
+    let customFeeTotal = 0; customFeeBody.querySelectorAll('.fee-total').forEach(el => customFeeTotal += Number(el.value || 0));
+    const extraFee = Math.round(lockFee + curtainInstallFee + weakFee + hardwareFee + waterFee + customFeeTotal);
+    const subtotal = Math.round(productSubtotal + planning + setup + dispatchFee + curtainFee + extraFee);
+    const tax = Math.round(subtotal * 0.05);
+    const total = Math.round(subtotal + tax);
+    const discountPct = Number(document.getElementById('negotiated_discount_pct').value || 0);
+    const discountPreview = discountPct > 0 ? Math.round(total * (discountPct / 100)) : 0;
+    const negotiatedInput = Number(document.getElementById('negotiated_total').value || 0);
+    const finalTotal = negotiatedInput > 0 ? negotiatedInput : (discountPreview > 0 ? discountPreview : total);
+    document.getElementById('product_subtotal_preview').textContent = fmtInt(productSubtotal);
+    document.getElementById('planning_fee_preview').textContent = fmtInt(planning);
+    document.getElementById('setup_fee_preview').textContent = fmtInt(setup);
+    document.getElementById('dispatch_fee_preview').textContent = fmtInt(dispatchFee);
+    document.getElementById('curtain_total_preview').textContent = fmtInt(curtainFee);
+    document.getElementById('extra_fee_preview').textContent = fmtInt(extraFee);
+    document.getElementById('subtotal_preview').textContent = fmtInt(subtotal);
+    document.getElementById('tax_preview').textContent = fmtInt(tax);
+    document.getElementById('total_preview').textContent = fmtInt(total);
+    document.getElementById('negotiated_total_preview').textContent = fmtInt(finalTotal);
+    if (finalTotal > 150000) {
+      document.getElementById('payment_scheme_preview').textContent = '30% / 40% / 30%';
+      document.getElementById('deposit1_preview').textContent = fmtInt(Math.round(finalTotal * 0.3));
+      document.getElementById('deposit2_preview').textContent = fmtInt(Math.round(finalTotal * 0.4));
+      document.getElementById('deposit3_preview').textContent = fmtInt(Math.round(finalTotal * 0.3));
+      document.getElementById('deposit2_box').style.display = '';
+    } else if (finalTotal > 50000) {
+      document.getElementById('payment_scheme_preview').textContent = '60% / 40%';
+      document.getElementById('deposit1_preview').textContent = fmtInt(Math.round(finalTotal * 0.6));
+      document.getElementById('deposit2_preview').textContent = '';
+      document.getElementById('deposit3_preview').textContent = fmtInt(Math.round(finalTotal * 0.4));
+      document.getElementById('deposit2_box').style.display = 'none';
+    } else {
+      document.getElementById('payment_scheme_preview').textContent = '一次付清';
+      document.getElementById('deposit1_preview').textContent = fmtInt(finalTotal);
+      document.getElementById('deposit2_preview').textContent = '';
+      document.getElementById('deposit3_preview').textContent = '';
+      document.getElementById('deposit2_box').style.display = 'none';
+    }
+    rebuildOverallNote();
+  }
+  document.addEventListener('focusin', function(e){
+    const t = e.target;
+    if (t && t.classList && t.classList.contains('select-on-focus')) {
+      setTimeout(()=>{ try { t.select(); } catch(err){} }, 0);
+    }
+  });
+
+  document.getElementById('add-row-btn').addEventListener('click', ()=>createRow({ qty: 0 }));
+  document.getElementById('add-curtain-row').addEventListener('click', addCurtainRow);
+  document.getElementById('add-custom-fee-btn').addEventListener('click', ()=>createCustomFeeRow({}));
+  document.getElementById('existing_quote_selector').addEventListener('change', function(){ if (this.value) location.href = '/quotes/' + this.value + '/edit'; });
+  if (dealerSelect && dealerSelect.tagName === 'SELECT') {
+    dealerSelect.addEventListener('change', function(){
+      const opt = this.options[this.selectedIndex];
+      const customerNameInput = document.querySelector('input[name="customer_name"]');
+      if (this.value) {
+        if (opt && opt.dataset.level) priceLevelSelect.value = opt.dataset.level;
+        if (customerNameInput) customerNameInput.value = (opt.textContent || '').split('｜')[0].trim();
+      } else {
+        priceLevelSelect.value = '市場報價';
+      }
+      recalc();
+    });
+  }
+  priceLevelSelect.addEventListener('change', ()=>getRows().forEach(tr => tr.refresh(false)));
+  dispatchSelect.addEventListener('change', recalc);
+  document.querySelectorAll('#planning_multiplier,#setup_multiplier,#negotiated_discount_pct,#negotiated_total,#lock_install_qty,#lock_install_unit_price,#curtain_install_amount,#weak_current_qty,#weak_current_amount,#hardware_qty,#hardware_amount,#water_elec_qty,#water_elec_amount')
+    .forEach(el => { el.addEventListener('input', recalc); el.addEventListener('change', recalc); });
+  document.getElementById('note_text').addEventListener('input', function(){ this.dataset.manualTouched = '1'; });
+  const salesSelector = document.getElementById('sales_selector');
+  salesSelector.addEventListener('change', function(){
+    const opt = this.options[this.selectedIndex];
+    document.getElementById('sales_name').value = opt ? (opt.value || '') : '';
+    document.getElementById('sales_phone').value = opt ? (opt.dataset.phone || '') : '';
+    document.getElementById('sales_email').value = opt ? (opt.dataset.email || '') : '';
+  });
+  ensureRows(10);
+  if (Array.isArray(initialRows)) {
+    initialRows.forEach((row, idx) => {
+      if (idx < getRows().length) {
+        const tr = getRows()[idx];
+        tr.querySelector('.product-search').value = row.search || '';
+        tr.querySelector('.product-id').value = row.product_id || '';
+        tr.querySelector('.qty-input').value = row.qty || 0;
+        tr.querySelector('.item-note').value = row.note || '';
+        if (row.note) tr.querySelector('.item-note').dataset.manualTouched = '1';
+        tr.refresh(true);
+      } else {
+        createRow(row);
+      }
+    });
+  }
+  if (Array.isArray(initialCustomFees) && initialCustomFees.length) {
+    initialCustomFees.forEach(r => createCustomFeeRow(r));
+  } else {
+    createCustomFeeRow({});
+  }
+  if (Array.isArray(initialCurtainRows) && initialCurtainRows.length) {
+    initialCurtainRows.forEach(r => {
+      const tpl = document.getElementById('curtainRowTemplate');
+      const tr = tpl.content.firstElementChild.cloneNode(true);
+      curtainBody.appendChild(tr);
+      tr.querySelector('[name="curtain_space[]"]').value = r.space || '';
+      tr.querySelector('[name="curtain_type[]"]').value = r.type || '蛇型簾';
+      tr.querySelector('[name="curtain_tracks[]"]').value = Math.round(r.qty || 1);
+      tr.querySelector('[name="curtain_motor_price[]"]').value = Math.round(r.motor_price || 0);
+      tr.querySelector('[name="curtain_track_unit_price[]"]').value = Math.round(r.track_unit_price || 0);
+      tr.querySelector('[name="curtain_track_length[]"]').value = Math.round(r.track_length || 0);
+      tr.querySelector('[name="curtain_width[]"]').value = Math.round(r.width || 0);
+      tr.querySelector('[name="curtain_height[]"]').value = Math.round(r.height || 0);
+      tr.querySelector('[name="curtain_cloth_price[]"]').value = Math.round(r.cloth_price || 0);
+      tr.querySelector('[name="curtain_note[]"]').value = r.note || '';
+      bindCurtainRow(tr);
+      calcCurtainRow(tr);
+    });
+  } else {
+    addCurtainRow();
+    addCurtainRow();
+  }
+  document.getElementById('deposit2_box').style.display = 'none';
+  recalc();
+})();
+</script>
+{% endblock %}

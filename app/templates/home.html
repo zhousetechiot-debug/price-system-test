@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>查價前台</h1>
+    <p>預設先看市場報價，需要哪些欄位再勾選顯示即可。</p>
+</div>
+<form method="get" action="/internal/home" class="card" id="homeFilterForm">
+    <div class="grid-home-search">
+        <div><label>關鍵字</label><input type="text" name="q" value="{{ keyword }}" placeholder="例如 VS20ZW / Mini主機"></div>
+        <div><label>類別</label><select name="category"><option value="">全部</option>{% for c in categories %}<option value="{{ c }}" {% if c==selected_category %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+        <div>
+            <label>附加顯示欄位</label>
+            <details class="multi-select-box" id="homeExtraDetails">
+                <summary id="extraSummary">{{ selected_extra_labels }}</summary>
+                <div class="multi-select-list">
+                    {% for item in extra_choices %}
+                    <label class="inline-check"><input type="checkbox" name="extra_cols" value="{{ item.value }}" {% if item.value in selected_extra_cols %}checked{% endif %}> {{ item.label }}</label>
+                    {% endfor %}
+                </div>
+            </details>
+        </div>
+        <div class="actions-bottom"><button type="submit">查詢</button></div>
+    </div>
+</form>
+<div class="card">
+    <div class="section-inline-head"><h3>商品明細</h3><div class="muted">市場報價固定顯示；成本勾選後會同時顯示 TWD / USD。</div></div>
+    <table class="table">
+        <thead><tr><th>類別</th><th>型號</th><th>品名</th><th>圖片</th><th>單位</th><th>市場報價</th>
+            {% for col in selected_extra_cols %}
+                {% if col == 'cost' %}<th>成本(TWD / USD)</th>{% elif col == 'market_min' %}<th>市場最低價</th>{% elif col == 'designer' %}<th>設計師價</th>{% elif col == 'dealer_lv1' %}<th>一級經銷商</th>{% elif col == 'dealer_lv2' %}<th>二級經銷商</th>{% elif col == 'branch' %}<th>分公司</th>{% elif col == 'master' %}<th>總經銷商</th>{% elif col == 'profit' %}<th>利潤率</th>{% endif %}
+            {% endfor %}
+        </tr></thead>
+        <tbody>
+        {% for p in products %}
+        <tr>
+            <td>{{ p.category or '' }}</td><td>{{ p.model }}</td><td>{{ p.name }}</td>
+            <td>{% if get_image_src(p) %}<img class="thumb hover-zoom" src="{{ get_image_src(p) }}">{% else %}-{% endif %}</td>
+            <td>{{ p.unit or '台' }}</td><td class="price">{{ "{:,.0f}".format(p.market_price or 0) }}</td>
+            {% for col in selected_extra_cols %}
+                {% if col == 'cost' %}<td>{{ "{:,.0f}".format(p.final_cost_twd or 0) }} / US$ {{ "{:.2f}".format((p.final_cost_twd or 0) / usd_rate if usd_rate else 0) }}</td>{% elif col == 'market_min' %}<td>{{ "{:,.0f}".format(p.market_min_price or 0) }}</td>{% elif col == 'designer' %}<td>{{ "{:,.0f}".format(p.designer_price or 0) }}</td>{% elif col == 'dealer_lv1' %}<td>{{ "{:,.0f}".format(p.dealer_lv1_price or 0) }}</td>{% elif col == 'dealer_lv2' %}<td>{{ "{:,.0f}".format(p.dealer_lv2_price or 0) }}</td>{% elif col == 'branch' %}<td>{{ "{:,.0f}".format(p.branch_price or 0) }}</td>{% elif col == 'master' %}<td>{{ "{:,.0f}".format(p.master_dealer_price or 0) }}</td>{% elif col == 'profit' %}<td>{{ "{:.1f}%".format(get_profit_rate(p.final_cost_twd, p.market_price)) }}</td>{% endif %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+window.addEventListener('DOMContentLoaded',()=>{
+ const checks=[...document.querySelectorAll('input[name="extra_cols"]')];
+ const summary=document.getElementById('extraSummary');
+ const labels={cost:'成本',market_min:'市場最低價',designer:'設計師價',dealer_lv1:'一級經銷商',dealer_lv2:'二級經銷商',branch:'分公司',master:'總經銷商',profit:'利潤率'};
+ function refresh(){ const vals=checks.filter(c=>c.checked).map(c=>labels[c.value]); summary.textContent=vals.length?vals.join('、'):'附加顯示欄位'; }
+ checks.forEach(c=>c.addEventListener('change',refresh)); refresh();
+});
+</script>
+{% endblock %}

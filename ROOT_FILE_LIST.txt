@@ -1,0 +1,10 @@
+這包的根目錄應包含以下主要檔案與資料夾：
+- app/
+- uploads/
+- app_flask.py
+- price_system.db
+- run.bat
+- requirements.txt
+- start_manual.txt
+- README.md
+- .env.example

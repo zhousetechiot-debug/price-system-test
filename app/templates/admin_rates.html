@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>匯率 / 折扣設定</h1>
+    <p>此頁顯示目前所有商品各層級的平均折扣比例。商品實際計算請到各商品頁調整。</p>
+</div>
+{% if message %}<div class="alert success">{{ message }}</div>{% endif %}
+
+<div class="card">
+  <h3>所有商品目前平均折扣比例（相對市場報價 %）</h3>
+  <div class="grid-3-lower">
+    <div><label>市場最低價平均</label><input value="{{ average_discount_map.get('市場最低價', 0) }}%" readonly></div>
+    <div><label>設計師價平均</label><input value="{{ average_discount_map.get('設計師價', 0) }}%" readonly></div>
+    <div><label>一級經銷商平均</label><input value="{{ average_discount_map.get('一級經銷商', 0) }}%" readonly></div>
+    <div><label>二級經銷商平均</label><input value="{{ average_discount_map.get('二級經銷商', 0) }}%" readonly></div>
+    <div><label>分公司平均</label><input value="{{ average_discount_map.get('分公司', 0) }}%" readonly></div>
+    <div><label>總經銷商平均</label><input value="{{ average_discount_map.get('總經銷商', 0) }}%" readonly></div>
+  </div>
+  <div class="muted">這裡顯示的是所有商品目前各層級的折扣比例平均值。</div>
+</div>
+
+<div class="card">
+    <form method="post" enctype="multipart/form-data">
+        <div class="grid-2">
+            <div>
+                <label>USD → TWD</label>
+                <input type="number" step="0.01" name="usd_rate" value="{{ rates['USD'] }}">
+                <div class="muted small-text">美金保留到小數第 2 位即可。</div>
+            </div>
+            <div>
+                <label>RMB → TWD</label>
+                <input type="number" step="0.01" name="rmb_rate" value="{{ rates['RMB'] }}">
+            </div>
+        </div>
+        <h3 style="margin-top:20px;">公司 Logo</h3>
+        <div class="grid-2">
+            <div><label>上傳 Logo</label><input type="file" name="company_logo" accept="image/*"></div>
+            <div>{% if company_logo_src %}<img class="thumb" src="{{ company_logo_src }}" style="width:120px;height:auto;">{% else %}<div class="muted">尚未上傳 Logo</div>{% endif %}</div>
+        </div>
+        <label class="inline-check"><input type="checkbox" name="apply_to_products" value="1"> 儲存後，同步依目前匯率重算全部商品售價</label>
+        <button type="submit">儲存設定</button>
+    </form>
+</div>
+{% endblock %}

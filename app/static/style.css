@@ -1,0 +1,457 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Microsoft JhengHei", "PingFang TC", Arial, sans-serif; background: #f4f6f8; color: #1f2937; }
+.container { width: min(1680px, calc(100% - 32px)); margin: 0 auto; }
+.topbar { background: #0f172a; color: white; padding: 14px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+.topbar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.brand { font-size: 20px; font-weight: 700; }
+.nav { display: flex; gap: 14px; flex-wrap: wrap; }
+.nav a { color: white; text-decoration: none; padding: 8px 12px; border-radius: 10px; }
+.nav a:hover { background: rgba(255,255,255,0.12); }
+.page { padding: 28px 0 60px; }
+.page-header { margin-bottom: 18px; }
+.page-header h1 { margin-bottom: 6px; }
+.card { background: white; border-radius: 18px; padding: 20px; margin-bottom: 18px; box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06); overflow-x:auto; }
+.grid-2, .grid-5 { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-5 { grid-template-columns: 2fr 1fr 1fr 1fr auto; }
+label { display: block; font-weight: 700; margin-bottom: 8px; }
+input, select, textarea, button { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid #d1d5db; font-size: 15px; }
+textarea { resize: vertical; }
+button, .button-link { background: #2563eb; color: white; border: none; cursor: pointer; text-decoration: none; text-align: center; display: inline-block; width: auto; padding: 10px 16px; border-radius: 12px; font-weight: 700; }
+.button-link.secondary { background: #475569; }
+.actions-bottom { display: flex; align-items: end; }
+.table { width: 100%; border-collapse: collapse; overflow: hidden; min-width: 1100px; }
+.table th, .table td { border-bottom: 1px solid #e5e7eb; padding: 10px 8px; text-align: left; vertical-align: middle; }
+.table th { background: #eff6ff; color: #1e3a8a; font-weight: 700; }
+.table .price { color: #b91c1c; font-weight: 700; }
+.small-text { font-size: 13px; }
+.empty { text-align: center; color: #64748b; padding: 24px 0; }
+.alert { padding: 14px 16px; border-radius: 14px; margin-bottom: 16px; }
+.alert.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.thumb { width: 56px; height: 56px; object-fit: cover; border-radius: 10px; border: 1px solid #d1d5db; background:#fff; }
+.thumb-large { width: 120px; height: 120px; }
+.button-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.inline-check { display: flex; align-items: center; gap: 8px; margin: 16px 0; }
+.inline-check input { width: auto; }
+.section-inline-head { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom:10px; }
+.muted { color:#64748b; }
+.plus-btn, .tiny-toggle { background:#1d4ed8; color:#fff; border:none; padding:4px 10px; border-radius:999px; font-weight:700; display:inline-block; width:auto; }
+.preview-grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+.preview-grid > div { background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; padding:14px; }
+.preview-grid span { display:block; font-size:13px; color:#475569; margin-bottom:6px; }
+.preview-grid strong { font-size:22px; color:#0f172a; }
+.payment-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+.quote-picker-table select, .quote-picker-table input { min-width: 140px; }
+
+.quote-sheet { background: white; padding: 12px 14px 24px; border: 1px solid #d9d9d9; }
+.quote-title { text-align: center; font-size: 30px; font-weight: 700; margin-bottom: 8px; }
+.quote-meta, .quote-grid, .quote-totals, .bank-table { width: 100%; border-collapse: collapse; }
+.quote-meta td { border: 1px solid #d9d9d9; padding: 6px 8px; font-size: 14px; }
+.quote-meta .label, .quote-totals .label { width: 110px; white-space: nowrap; }
+.quote-grid { table-layout: fixed; }
+.quote-grid th, .quote-grid td { border: 1px solid #9ca3af; padding: 6px 8px; font-size: 14px; min-height: 28px; word-break: break-word; }
+.quote-grid th { font-weight: 700; text-align: center; }
+.quote-grid .blank-row td { height: 28px; }
+.quote-thumb { width: 50px; height: 50px; object-fit: cover; display:block; margin: 0 auto; }
+.quote-totals { width: 420px; margin-left: auto; margin-top: 14px; }
+.quote-totals td { border: 1px solid #9ca3af; padding: 6px 10px; font-size: 14px; }
+.quote-bottom-grid { margin-top: 18px; }
+.quote-note-block pre { white-space: pre-wrap; font-family: inherit; margin: 8px 0 16px; line-height: 1.5; font-size: 14px; }
+.bank-table td { padding: 4px 8px; border: none; font-size: 14px; }
+.sign-row { display: flex; justify-content: space-between; margin-top: 36px; font-size: 16px; }
+.sign-title { font-size: 28px; }
+.sign-note { align-self: end; }
+
+@media (max-width: 1000px) {
+  .grid-2, .grid-5, .preview-grid { grid-template-columns: 1fr; }
+  .topbar-inner { display:block; }
+  .nav { margin-top: 12px; }
+  .container { width: calc(100% - 20px); }
+}
+
+@media print {
+  .topbar, .no-print { display: none !important; }
+  body { background: white; }
+  .page { padding: 0; }
+  .container { width: 100%; }
+  .quote-sheet { border: none; padding: 0; }
+}
+
+.grid-home-search { display:grid; grid-template-columns: 2fr 1fr 1fr auto; gap:16px; }
+.multi-select-box { border:1px solid #d1d5db; border-radius:12px; background:#fff; padding:10px 12px; }
+.multi-select-box summary { cursor:pointer; font-weight:600; }
+.multi-select-list { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px; padding-top:10px; }
+.grid-3-lower { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:16px; }
+.quote-picker-table textarea { min-width:220px; }
+.quote-picker-table .product-search { min-width:280px; }
+@media (max-width: 1000px) { .grid-home-search, .grid-3-lower { grid-template-columns: 1fr; } .multi-select-list{grid-template-columns:1fr;} }
+
+.danger-text{color:#dc2626;font-weight:700;}
+.quote-header-flex{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:10px;}
+.quote-logo-box{width:170px;min-height:64px;display:flex;align-items:center;justify-content:center;border:1px solid #d9d9d9;border-radius:10px;}
+
+.selected-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.tag-chip{display:inline-block;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:999px;padding:6px 10px;font-size:13px;}
+.quote-sheet{background:#fff;}
+.quote-meta td,.quote-grid td,.quote-grid th,.quote-totals td{word-break:break-word;}
+
+
+.fee-table-wrap{overflow-x:auto;}
+.fee-table{min-width:980px;}
+.fee-table input,.fee-table select{min-width:0;width:100%;padding:8px 10px;}
+.fee-table td strong{color:#0f172a;}
+.compact-preview-grid strong{font-size:20px;}
+@media (max-width:1000px){.fee-table{min-width:760px;}}
+
+
+.fee-rows{display:flex;flex-direction:column;gap:10px;}
+.fee-row{display:grid;grid-template-columns:1.2fr .8fr .6fr 1fr 1fr 1.4fr;gap:10px;align-items:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;}
+.fee-row-head{background:#eff6ff;color:#1e3a8a;font-weight:700;}
+.fee-row-head div{font-size:14px;}
+.fee-title{font-weight:700;color:#0f172a;}
+.fee-desc{font-size:13px;}
+.fee-row input,.fee-row select{margin:0;width:100%;padding:9px 10px;min-width:0;}
+@media (max-width: 1200px){.fee-row{grid-template-columns:1fr 1fr;}.fee-row-head{display:none;}.fee-title{grid-column:1 / -1;}}
+
+
+.image-editor-wrap{margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb}
+.editor-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:16px}
+.image-editor-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.image-editor-panel{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:14px}
+.editor-canvas-wrap{width:100%;min-height:420px;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed #cbd5e1;border-radius:14px;overflow:hidden}
+.editor-canvas-wrap img{max-width:100%;display:block}
+.preview-box{width:100%;display:flex;align-items:center;justify-content:center;background:#fff;border:1px dashed #cbd5e1;border-radius:14px;padding:16px;min-height:260px}
+.img-preview{width:220px;height:220px;overflow:hidden;border-radius:16px;background:#fff;border:1px solid #e5e7eb}
+button.secondary, .button-link.secondary{background:#fff;color:#1f2937;border:1px solid #cbd5e1}
+@media (max-width: 980px){
+  .image-editor-grid{grid-template-columns:1fr}
+  .editor-canvas-wrap{min-height:300px}
+}
+
+.hover-zoom{transition:transform .18s ease, box-shadow .18s ease; cursor:zoom-in;}
+.hover-zoom:hover{transform:scale(2.2); position:relative; z-index:10; box-shadow:0 8px 30px rgba(0,0,0,.2);}
+.multi-select-box summary{list-style:none;}
+.multi-select-box summary::-webkit-details-marker{display:none;}
+
+/* V52 商品總表欄寬優化 */
+#previewTable .col-image{width:72px; min-width:72px; text-align:center;}
+#previewTable .col-category{width:120px; min-width:120px; white-space:normal;}
+#previewTable .col-status{width:88px; min-width:88px; white-space:normal;}
+#previewTable .col-description{max-width:360px; width:360px; white-space:normal; word-break:break-word; line-height:1.45;}
+#previewTable th:nth-child(5), #previewTable td:nth-child(5){min-width:110px;} /* 型號 */
+#previewTable th:nth-child(6), #previewTable td:nth-child(6){min-width:180px;} /* 品名 */
+#previewTable td.col-category, #previewTable td.col-status{vertical-align:top;}
+
+.table-sync-wrap{padding-top:10px;}
+.table-scroll-top{overflow-x:auto; overflow-y:hidden; height:18px; margin-bottom:10px; border-radius:999px; background:#e5e7eb;}
+.table-scroll-inner{height:1px;}
+.table-scroll-main{overflow-x:auto;}
+.dealer-form-grid{display:grid;grid-template-columns:1.2fr .9fr .8fr .9fr 1.7fr 1.25fr .9fr .9fr .8fr .8fr .9fr;gap:12px;align-items:end;}
+.dealer-perm-row{display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:6px;}
+.dealer-table input,.dealer-table select{padding:8px 10px;min-width:0;}
+.dealer-table .col-name{min-width:150px;width:150px;}
+.dealer-table .col-level{min-width:120px;width:120px;}
+.dealer-table .col-key{min-width:90px;width:90px;}
+.dealer-table .col-tax{min-width:110px;width:110px;}
+.dealer-table .col-address{min-width:220px;width:220px;}
+.dealer-table .col-phone{min-width:150px;width:150px;}
+.dealer-table .col-sales,.dealer-table .col-pay{min-width:120px;width:120px;}
+.dealer-table .col-closing,.dealer-table .col-payment,.dealer-table .col-signed{min-width:95px;width:95px;}
+.dealer-table .col-note{min-width:180px;width:180px;}
+@media (max-width: 1200px){.dealer-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+
+/* =========================
+   V83 RWD 手機 / 平板 / Web 介面優化
+   ========================= */
+:root{
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html { -webkit-text-size-adjust: 100%; }
+body { min-width: 0; }
+.mobile-bottom-nav{ display:none; }
+
+/* 桌機導覽列避免太多項目擠爆，改成可橫向滑動 */
+.nav{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+}
+.nav a{ white-space:nowrap; }
+
+/* 共用表單：手機更好點 */
+input, select, textarea, button, .button-link{
+  min-height: 42px;
+}
+input[type="checkbox"], input[type="radio"]{
+  min-height: auto;
+}
+
+/* 平板 */
+@media (max-width: 1024px){
+  .container{ width: min(100% - 24px, 100%); }
+  .topbar-inner{ align-items:flex-start; }
+  .brand{ margin-bottom:8px; }
+  .nav{ width:100%; flex-wrap:nowrap; padding-bottom:4px; }
+  .card{ padding:18px; border-radius:18px; }
+  .preview-grid, .payment-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+/* 手機主版面 */
+@media (max-width: 760px){
+  body{
+    background:#f6f8fb;
+    padding-bottom: calc(76px + var(--safe-bottom));
+  }
+  .container{ width: calc(100% - 20px); }
+  .topbar{
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    padding: 12px 0;
+  }
+  .topbar-inner{
+    display:block;
+  }
+  .brand{
+    font-size: 18px;
+    line-height:1.2;
+    margin:0;
+  }
+  .nav{
+    margin-top:10px;
+    gap:8px;
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    padding-bottom:2px;
+  }
+  .nav a{
+    font-size:14px;
+    padding:7px 10px;
+    background:rgba(255,255,255,.08);
+  }
+
+  .mobile-bottom-nav{
+    display:grid;
+    grid-auto-flow:column;
+    grid-auto-columns:1fr;
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    z-index:100;
+    background:#ffffff;
+    border-top:1px solid #e5e7eb;
+    box-shadow:0 -8px 28px rgba(15,23,42,.10);
+    padding:8px 8px calc(8px + var(--safe-bottom));
+  }
+  .mobile-bottom-nav a{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    color:#0f172a;
+    font-weight:700;
+    font-size:13px;
+    min-height:42px;
+    border-radius:14px;
+  }
+  .mobile-bottom-nav a:active,
+  .mobile-bottom-nav a:hover{
+    background:#eff6ff;
+    color:#1d4ed8;
+  }
+
+  .page{ padding:18px 0 24px; }
+  .page-header{ margin-bottom:14px; }
+  .page-header h1{
+    font-size:28px;
+    line-height:1.2;
+    margin:0 0 8px;
+  }
+  .page-header p{ font-size:14px; line-height:1.55; }
+
+  .card{
+    border-radius:18px;
+    padding:16px;
+    margin-bottom:14px;
+    overflow:visible;
+    box-shadow:0 8px 22px rgba(15,23,42,.06);
+  }
+  .grid-2, .grid-3-lower, .grid-5,
+  .grid-home-search, .preview-grid, .payment-grid,
+  .dealer-form-grid{
+    grid-template-columns:1fr !important;
+    gap:12px;
+  }
+
+  label{ font-size:15px; margin-bottom:6px; }
+  input, select, textarea{
+    width:100%;
+    font-size:16px;
+    min-height:48px;
+    border-radius:14px;
+  }
+  textarea{ min-height:96px; }
+  button, .button-link{
+    width:100%;
+    min-height:48px;
+    border-radius:14px;
+    font-size:16px;
+  }
+  .button-row{
+    flex-direction:column;
+    gap:10px;
+  }
+  .actions-bottom{ align-items:stretch; }
+  .section-inline-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  /* 手機表格卡片化：適用後台列表、商品、權限、經銷商 */
+  .table:not(.quote-grid),
+  .table:not(.quote-grid) thead,
+  .table:not(.quote-grid) tbody,
+  .table:not(.quote-grid) tr,
+  .table:not(.quote-grid) th,
+  .table:not(.quote-grid) td{
+    display:block;
+    width:100%;
+    min-width:0 !important;
+  }
+  .table:not(.quote-grid){
+    border-collapse:separate;
+    border-spacing:0;
+  }
+  .table:not(.quote-grid) thead{
+    display:none;
+  }
+  .table:not(.quote-grid) tr{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:18px;
+    padding:12px;
+    margin-bottom:12px;
+    box-shadow:0 6px 18px rgba(15,23,42,.05);
+  }
+  .table:not(.quote-grid) td{
+    border-bottom:1px solid #eef2f7;
+    padding:10px 0;
+    display:grid;
+    grid-template-columns:108px minmax(0,1fr);
+    gap:10px;
+    align-items:center;
+    text-align:left;
+    word-break:break-word;
+  }
+  .table:not(.quote-grid) td:last-child{ border-bottom:none; }
+  .table:not(.quote-grid) td::before{
+    content: attr(data-label);
+    color:#64748b;
+    font-size:13px;
+    font-weight:700;
+  }
+  .table:not(.quote-grid) td:empty::after{
+    content:"—";
+    color:#94a3b8;
+  }
+  .table:not(.quote-grid) td input,
+  .table:not(.quote-grid) td select,
+  .table:not(.quote-grid) td textarea{
+    min-height:42px;
+    font-size:15px;
+  }
+  .table:not(.quote-grid) td button,
+  .table:not(.quote-grid) td .button-link{
+    width:100%;
+  }
+
+  .table-scroll-main,
+  .table-sync-wrap,
+  .fee-table-wrap{
+    overflow:visible;
+  }
+  .table-scroll-top{ display:none; }
+
+  .thumb{
+    width:72px;
+    height:72px;
+    border-radius:14px;
+  }
+  .thumb-large{
+    width:100%;
+    height:auto;
+    max-height:220px;
+    object-fit:contain;
+  }
+
+  .multi-select-list{ grid-template-columns:1fr; }
+  .preview-grid > div{
+    padding:12px;
+  }
+  .preview-grid strong{
+    font-size:20px;
+  }
+
+  /* 報價編輯：保留可操作性，避免整張表擠爆 */
+  .quote-picker-table{
+    min-width:760px;
+  }
+  .quote-picker-table input,
+  .quote-picker-table select,
+  .quote-picker-table textarea{
+    min-width:130px;
+  }
+  .quote-picker-table .product-search{
+    min-width:220px;
+  }
+
+  /* 工費列手機化 */
+  .fee-row{
+    grid-template-columns:1fr !important;
+    gap:8px;
+  }
+  .fee-row-head{ display:none; }
+  .fee-title{ grid-column:auto; }
+
+  /* 報價單預覽在手機可橫向查看，避免 PDF 格式變形 */
+  .quote-sheet{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .quote-sheet > *{
+    min-width:760px;
+  }
+  .quote-title{ font-size:24px; }
+  .quote-totals{ width:100%; }
+
+  .image-editor-grid{ grid-template-columns:1fr; }
+  .editor-canvas-wrap{ min-height:260px; }
+  .img-preview{ width:180px; height:180px; }
+
+  /* 登入頁更適合手機 */
+  .login-card, .auth-card{
+    max-width:100%;
+  }
+}
+
+/* 小手機 */
+@media (max-width: 420px){
+  .container{ width: calc(100% - 16px); }
+  .page-header h1{ font-size:26px; }
+  .card{ padding:14px; }
+  .table:not(.quote-grid) td{
+    grid-template-columns:92px minmax(0,1fr);
+    gap:8px;
+  }
+  .mobile-bottom-nav a{
+    font-size:12px;
+    min-height:40px;
+  }
+}
+
+/* 列印時恢復，不顯示手機選單 */
+@media print{
+  .mobile-bottom-nav{ display:none !important; }
+}

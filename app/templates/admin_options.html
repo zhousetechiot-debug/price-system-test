@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><h1>類別 / 狀態維護</h1><p>修改商品頁會使用這裡的下拉選單資料。</p></div>
+{% if message %}<div class="card">{{ message }}</div>{% endif %}
+<div class="grid-2">
+<div class="card"><h3>類別管理</h3><form method="post"><input type="hidden" name="opt_type" value="category"><label>現有類別</label><select name="old_name"><option value="">新增</option>{% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select><label>名稱</label><input type="text" name="name" placeholder="輸入新類別或覆寫名稱"><div class="button-row"><button type="submit">儲存類別</button></div></form></div>
+<div class="card"><h3>狀態管理</h3><form method="post"><input type="hidden" name="opt_type" value="status"><label>現有狀態</label><select name="old_name"><option value="">新增</option>{% for s in statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select><label>名稱</label><input type="text" name="name" placeholder="輸入新狀態或覆寫名稱"><div class="button-row"><button type="submit">儲存狀態</button></div></form></div>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block content %}
+<link href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css" rel="stylesheet"><script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<div class="page-header"><h1>{{ title_text }}</h1></div>
+{% if error %}<div class="alert success" style="background:#fef2f2;color:#991b1b;border-color:#fecaca;">{{ error }}</div>{% endif %}
+<form method="post" action="{{ action }}" enctype="multipart/form-data">
+<div class="card"><div class="grid-2">
+  <div><label>類別</label><select name="category">{% for c in categories %}<option value="{{ c }}" {% if product and product.category==c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select><div class="muted">類別請到「後台匯入」頁面維護。</div></div>
+  <div><label>型號</label><input type="text" name="model" value="{{ product.model if product else '' }}" required></div>
+  <div><label>品名</label><input type="text" name="name" value="{{ product.name if product else '' }}" required></div>
+  <div><label>單位</label><input type="text" name="unit" value="{{ product.unit if product else '台' }}"></div>
+  <div><label>狀態</label><select name="status">{% for s in statuses %}<option value="{{ s }}" {% if product and product.status==s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select><div class="muted">狀態請到「後台匯入」頁面維護。</div></div>
+  <div><label>來源幣別</label><select name="source_currency" id="source_currency"><option value="TWD" {% if product and product.source_currency=='TWD' %}selected{% endif %}>TWD</option><option value="USD" {% if product and product.source_currency=='USD' %}selected{% endif %}>USD</option><option value="RMB" {% if product and product.source_currency=='RMB' %}selected{% endif %}>RMB</option></select></div>
+  <div><label>來源成本</label><input type="number" step="0.01" name="source_cost" id="source_cost" value="{{ product.source_cost if product else 0 }}"></div>
+  <div><label>運費（USD）</label><input type="number" step="0.01" name="shipping_usd" id="shipping_usd" value="{{ product.shipping_usd if product else 0 }}"></div>
+  <div><label>關稅 / 其他成本加成（%）</label><input type="number" step="0.01" name="duty_rate_pct" id="duty_rate_pct" value="{{ product.duty_rate_pct if product else 0 }}"></div>
+  <div><label>加乘後金額（USD）</label><input type="text" id="duty_cost_usd_preview" readonly value="{{ '%.2f'|format(product.duty_cost_usd) if product else '0.00' }}"></div>
+  <div><label>外採配件費用（TWD）</label><input type="number" step="1" name="outsourced_parts_fee_twd" id="outsourced_parts_fee_twd" value="{{ (product.outsourced_parts_fee_twd or 0)|round|int if product else 0 }}"></div>
+  
+</div></div>
+<div class="card"><h3>規劃費 / 設定費</h3><div class="grid-2"><div><label>規劃費</label><input type="number" step="1" name="planning_fee_twd" value="{{ (product.planning_fee_twd or 0)|round|int if product else 0 }}"></div><div><label>設定費</label><input type="number" step="1" name="setup_fee_twd" value="{{ (product.setup_fee_twd or 0)|round|int if product else 0 }}"></div></div></div>
+<div class="card"><h3>折扣比例（商品計算使用，可修改）</h3><div class="grid-3-lower">
+<div><label>市場最低價折扣比例（%）</label><input type="number" step="0.01" name="market_min_discount_ratio" value="{{ product_discount_ratio_map.get('市場最低價', 95) }}"></div>
+<div><label>設計師價折扣比例（%）</label><input type="number" step="0.01" name="designer_discount_ratio" value="{{ product_discount_ratio_map.get('設計師價', 90) }}"></div>
+<div><label>一級經銷商折扣比例（%）</label><input type="number" step="0.01" name="dealer_lv1_discount_ratio" value="{{ product_discount_ratio_map.get('一級經銷商', 85) }}"></div>
+<div><label>二級經銷商折扣比例（%）</label><input type="number" step="0.01" name="dealer_lv2_discount_ratio" value="{{ product_discount_ratio_map.get('二級經銷商', 80) }}"></div>
+<div><label>分公司折扣比例（%）</label><input type="number" step="0.01" name="branch_discount_ratio" value="{{ product_discount_ratio_map.get('分公司', 75) }}"></div>
+<div><label>總經銷商折扣比例（%）</label><input type="number" step="0.01" name="master_discount_ratio" value="{{ product_discount_ratio_map.get('總經銷商', 70) }}"></div>
+</div><div class="muted">這裡可以直接修改本商品要帶入計算的折扣比例。不同商品若折扣不同，請在各商品頁各自設定。</div></div>
+<div class="card"><h3>特殊倍數（各層級分開設定）</h3><div class="grid-3-lower">
+<div><label>市場報價特殊倍數</label><input type="number" step="0.001" name="special_market_price_ratio" value="{{ "%.3f"|format(product.special_market_price_ratio or 1) if product else "1.000" }}"></div>
+<div><label>市場最低價特殊倍數</label><input type="number" step="0.001" name="special_market_min_ratio" value="{{ "%.3f"|format(product.special_market_min_ratio or 1) if product else "1.000" }}"></div>
+<div><label>設計師價特殊倍數</label><input type="number" step="0.001" name="special_designer_ratio" value="{{ "%.3f"|format(product.special_designer_ratio or 1) if product else "1.000" }}"></div>
+<div><label>一級經銷商特殊倍數</label><input type="number" step="0.001" name="special_dealer_lv1_ratio" value="{{ "%.3f"|format(product.special_dealer_lv1_ratio or 1) if product else "1.000" }}"></div>
+<div><label>二級經銷商特殊倍數</label><input type="number" step="0.001" name="special_dealer_lv2_ratio" value="{{ "%.3f"|format(product.special_dealer_lv2_ratio or 1) if product else "1.000" }}"></div>
+<div><label>分公司特殊倍數</label><input type="number" step="0.001" name="special_branch_ratio" value="{{ "%.3f"|format(product.special_branch_ratio or 1) if product else "1.000" }}"></div>
+<div><label>總經銷商特殊倍數</label><input type="number" step="0.001" name="special_master_ratio" value="{{ "%.3f"|format(product.special_master_ratio or 1) if product else "1.000" }}"></div>
+</div></div>
+<div class="card"><h3>定價（全部四捨五入到整數）</h3><div class="grid-2">
+<div><label>市場報價（=總成本×市場倍率）</label><input type="number" step="1" name="market_price" value="{{ (product.market_price or 0)|round|int if product else 0 }}"></div>
+<div><label>市場最低價（=市場報價×市場最低價折扣比例×特殊倍數）</label><input type="number" step="1" name="market_min_price" value="{{ (product.market_min_price or 0)|round|int if product else 0 }}"></div>
+<div><label>設計師價（=市場報價×設計師價折扣比例×特殊倍數）</label><input type="number" step="1" name="designer_price" value="{{ (product.designer_price or 0)|round|int if product else 0 }}"></div>
+<div><label>一級經銷商價（=市場報價×一級經銷商折扣比例×特殊倍數）</label><input type="number" step="1" name="dealer_lv1_price" value="{{ (product.dealer_lv1_price or 0)|round|int if product else 0 }}"></div>
+<div><label>二級經銷商價（=市場報價×二級經銷商折扣比例×特殊倍數）</label><input type="number" step="1" name="dealer_lv2_price" value="{{ (product.dealer_lv2_price or 0)|round|int if product else 0 }}"></div>
+<div><label>分公司價（=市場報價×分公司折扣比例×特殊倍數）</label><input type="number" step="1" name="branch_price" value="{{ (product.branch_price or 0)|round|int if product else 0 }}"></div>
+<div><label>總經銷商價（=市場報價×總經銷商折扣比例×特殊倍數）</label><input type="number" step="1" name="master_dealer_price" value="{{ (product.master_dealer_price or 0)|round|int if product else 0 }}"></div>
+</div></div>
+<div class="card"><div class="grid-2"><div><label>圖片網址</label><input type="text" name="image_url" value="{{ product.image_url if product else '' }}"></div><div><label>上傳圖片（一般儲存用）</label><input type="file" name="image_file" accept="image/*"></div><div><label>產品描述</label><textarea name="description" rows="4">{{ product.description if product else '' }}</textarea></div><div><label>產品備註</label><textarea name="note" rows="4">{{ product.note if product else '' }}</textarea></div></div>
+{% if product %}
+<div class="image-editor-wrap"><div class="editor-toolbar"><div><h3 style="margin:0 0 6px 0;">商品圖片編輯</h3><div class="muted">雙擊商品總表圖片也可直接進入此頁編輯。</div></div><div class="button-row"><label class="button-link secondary" style="cursor:pointer;">上傳新圖片並編輯<input type="file" id="editorUploadInput" accept="image/*" style="display:none;"></label><button type="button" id="zoomInBtn">放大</button><button type="button" id="zoomOutBtn" class="secondary">縮小</button><button type="button" id="fitCanvasBtn" class="secondary">適合畫布</button><button type="button" id="resetCropBtn" class="secondary">重設裁切</button><button type="button" id="resetOriginalBtn" class="secondary">一鍵重設原圖</button><button type="button" id="saveCropBtn">儲存圖片</button></div></div><div class="image-editor-grid"><div class="image-editor-panel"><div class="editor-canvas-wrap"><img id="editorImage" src="{{ get_image_src(product) or '' }}" alt="商品圖片"></div></div><div class="image-editor-panel"><div class="preview-box"><div class="img-preview"></div></div></div></div></div>
+{% endif %}
+<div class="button-row" style="margin-top:16px;"><button type="submit">儲存商品</button><a class="button-link secondary" href="/products">回商品總表</a></div></div>
+</form>
+{% if product %}
+<div class="card"><div class="section-inline-head"><h3>價格 / 欄位更改紀錄</h3><a class="button-link secondary" href="/admin/options">維護類別 / 狀態</a></div><div class="muted">永久保留，若要刪除需輸入目前的管理密碼。</div>{% for row in change_logs %}<div class="log-row" style="border-top:1px solid #e5e7eb;padding:12px 0;"><div><strong>{{ row.changed_at.strftime('%Y-%m-%d %H:%M:%S') }}</strong></div><pre style="white-space:pre-wrap; font-family:inherit;">{{ row.detail }}</pre><form method="post" action="/admin/product-logs/{{ product.id }}/delete/{{ row.id }}" class="button-row"><input type="password" name="password" placeholder="輸入刪除密碼"><button type="submit" class="secondary">刪除這筆紀錄</button></form></div>{% else %}<div class="muted">目前還沒有修改紀錄。</div>{% endfor %}</div>
+{% endif %}
+<script>
+window.addEventListener('DOMContentLoaded', function(){
+ function calcDuty(){ 
+   const currency=document.getElementById('source_currency').value;
+   const sourceCost=Number(document.getElementById('source_cost').value||0);
+   const shippingUsd=Number(document.getElementById('shipping_usd').value||0);
+   const pct=Math.max(0, Number(document.getElementById('duty_rate_pct').value||0));
+   const outsourced=Math.max(0, Number((document.getElementById('outsourced_parts_fee_twd')||{value:0}).value||0));
+   const usdRate=32.5, rmbRate=4.5;
+   let baseTwd=0, usdBase=0;
+   if(currency==='USD'){ baseTwd=sourceCost*usdRate; usdBase=sourceCost+shippingUsd; }
+   else if(currency==='RMB'){ baseTwd=sourceCost*rmbRate; usdBase=(sourceCost*rmbRate/usdRate)+shippingUsd; }
+   else { baseTwd=sourceCost; usdBase=sourceCost/usdRate+shippingUsd; }
+   const dutyUsd=usdBase*pct/100;
+   const dutyTwd=dutyUsd*usdRate;
+   document.getElementById('duty_cost_usd_preview').value=dutyUsd.toFixed(2);
+   const shippingTwd=shippingUsd*usdRate;
+   const finalCost=Math.round(baseTwd + dutyTwd + shippingTwd + outsourced);
+   const specials={
+      mp:Number(document.querySelector('[name="special_market_price_ratio"]').value||1),
+      mm:Number(document.querySelector('[name="special_market_min_ratio"]').value||1),
+      ds:Number(document.querySelector('[name="special_designer_ratio"]').value||1),
+      d1:Number(document.querySelector('[name="special_dealer_lv1_ratio"]').value||1),
+      d2:Number(document.querySelector('[name="special_dealer_lv2_ratio"]').value||1),
+      br:Number(document.querySelector('[name="special_branch_ratio"]').value||1),
+      ms:Number(document.querySelector('[name="special_master_ratio"]').value||1),
+   };
+   const market=Math.round(finalCost*2.2*specials.mp);
+   const pctMap={
+      mm:Number(document.querySelector('[name="market_min_discount_ratio"]').value||0),
+      ds:Number(document.querySelector('[name="designer_discount_ratio"]').value||0),
+      d1:Number(document.querySelector('[name="dealer_lv1_discount_ratio"]').value||0),
+      d2:Number(document.querySelector('[name="dealer_lv2_discount_ratio"]').value||0),
+      br:Number(document.querySelector('[name="branch_discount_ratio"]').value||0),
+      ms:Number(document.querySelector('[name="master_discount_ratio"]').value||0),
+   };
+   document.querySelector('[name="market_price"]').value=market;
+   document.querySelector('[name="market_min_price"]').value=Math.round(market*pctMap.mm/100*specials.mm);
+   document.querySelector('[name="designer_price"]').value=Math.round(market*pctMap.ds/100*specials.ds);
+   document.querySelector('[name="dealer_lv1_price"]').value=Math.round(market*pctMap.d1/100*specials.d1);
+   document.querySelector('[name="dealer_lv2_price"]').value=Math.round(market*pctMap.d2/100*specials.d2);
+   document.querySelector('[name="branch_price"]').value=Math.round(market*pctMap.br/100*specials.br);
+   document.querySelector('[name="master_dealer_price"]').value=Math.round(market*pctMap.ms/100*specials.ms);
+ } 
+ ['source_currency','source_cost','shipping_usd','duty_rate_pct','outsourced_parts_fee_twd'].forEach(id=>document.getElementById(id).addEventListener('input',calcDuty)); 
+ ['special_market_price_ratio','special_market_min_ratio','special_designer_ratio','special_dealer_lv1_ratio','special_dealer_lv2_ratio','special_branch_ratio','special_master_ratio','market_min_discount_ratio','designer_discount_ratio','dealer_lv1_discount_ratio','dealer_lv2_discount_ratio','branch_discount_ratio','master_discount_ratio'].forEach(n=>document.querySelector('[name="'+n+'"]').addEventListener('input',calcDuty));
+ calcDuty();
+ const editorImage=document.getElementById('editorImage'); 
+ if(!editorImage) return; 
+ let cropper=null;
+ let initialCanvasData=null;
+ let initialCropBoxData=null;
+ let initialImageData=null;
+ function captureInitialState(){ if(!cropper) return; initialCanvasData = cropper.getCanvasData(); initialCropBoxData = cropper.getCropBoxData(); initialImageData = cropper.getImageData(); }
+ function fitCanvas(){ if(!cropper) return; cropper.reset(); const imageData = cropper.getImageData(); const containerData = cropper.getContainerData(); if(!imageData.width || !imageData.height) return; const ratio = Math.min(containerData.width / imageData.naturalWidth, containerData.height / imageData.naturalHeight) * 0.8; cropper.zoomTo(Math.max(ratio, 0.2)); cropper.center(); const canvasData = cropper.getCanvasData(); const square = Math.min(canvasData.width, canvasData.height) * 0.92; cropper.setCropBoxData({ left: canvasData.left + (canvasData.width - square)/2, top: canvasData.top + (canvasData.height - square)/2, width: square, height: square, }); }
+ function initCropper(){ if(cropper) cropper.destroy(); if(!editorImage.src) return; cropper=new Cropper(editorImage,{aspectRatio:1,viewMode:0,dragMode:'move',autoCropArea:0.9,responsive:true,background:false,preview:'.img-preview',zoomable:true,zoomOnWheel:true,zoomOnTouch:true,toggleDragModeOnDblclick:false,ready(){ fitCanvas(); captureInitialState(); }}); }
+ editorImage.onload=()=>initCropper(); initCropper(); const refreshEditor=(url)=>{ editorImage.src=url; };
+ document.getElementById('zoomInBtn').onclick=()=>{ if(cropper){ cropper.zoom(0.1); } };
+ document.getElementById('zoomOutBtn').onclick=()=>{ if(cropper){ cropper.zoom(-0.2); } };
+ document.getElementById('fitCanvasBtn').onclick=()=>{ if(cropper){ fitCanvas(); } };
+ editorImage.addEventListener('wheel',function(e){ if(!cropper) return; e.preventDefault(); cropper.zoom(e.deltaY < 0 ? 0.08 : -0.12); }, {passive:false});
+ document.getElementById('resetCropBtn').onclick=()=>{ if(!cropper) return; cropper.reset(); if(initialCanvasData) cropper.setCanvasData(initialCanvasData); if(initialCropBoxData) cropper.setCropBoxData(initialCropBoxData); if(initialImageData && initialImageData.rotate) cropper.rotateTo(initialImageData.rotate); };
+ document.getElementById('editorUploadInput').addEventListener('change',async function(){ if(!this.files.length) return; const fd=new FormData(); fd.append('image_file',this.files[0]); const r=await fetch('/admin/products/{{ product.id }}/image-upload',{method:'POST',body:fd}); const d=await r.json(); if(d.ok){refreshEditor(d.image_url); alert('新圖片已上傳');} });
+ document.getElementById('saveCropBtn').onclick=()=>{ if(!cropper) return; cropper.getCroppedCanvas({width:500,height:500, imageSmoothingQuality:'high'}).toBlob(async function(blob){ const fd=new FormData(); fd.append('image',blob,'cropped.png'); const r=await fetch('/admin/products/{{ product.id }}/image-crop-save',{method:'POST',body:fd}); const d=await r.json(); if(d.ok){ refreshEditor(d.image_url); alert('圖片已更新'); } }, 'image/png'); };
+ document.getElementById('resetOriginalBtn').onclick=async()=>{ const r=await fetch('/admin/products/{{ product.id }}/image-reset',{method:'POST'}); const d=await r.json(); if(d.ok){refreshEditor(d.image_url);} else {alert(d.message||'無法重設');} };
+});
+</script>
+{% endblock %}

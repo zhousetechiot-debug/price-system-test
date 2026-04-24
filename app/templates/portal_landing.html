@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+  <h1>系統入口</h1>
+  <p>請依身分進入對應版本。內部版可維護商品、匯入、建立報價單；經銷商版僅顯示對應層級價格與匯出檔案。</p>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <h3>內部版</h3>
+    <p>供公司內部查價、維護、匯入與報價使用。</p>
+    <a class="button-link" href="/login">進入內部版</a>
+  </div>
+  <div class="card">
+    <h3>經銷商版</h3>
+    <p>供經銷商登入後查閱自己層級的價格表並匯出 Excel。</p>
+    <a class="button-link" href="/dealer/login">進入經銷商版</a>
+  </div>
+</div>
+{% endblock %}

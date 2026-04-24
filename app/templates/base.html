@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title or "智崴物聯價格系統" }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="topbar no-print">
+        <div class="container topbar-inner">
+            <div class="brand">智崴物聯價格系統</div>
+            <nav class="nav">
+                {% if is_internal_logged_in %}
+                    {% if can_manage_all %}<a href="/internal/home">查價前台</a>{% endif %}
+                    {% if can_manage_all %}<a href="/products">商品總表</a>{% endif %}
+                    {% if can_manage_all %}<a href="/admin/products/new">手動新增商品</a>{% endif %}
+                    {% if can_manage_all %}<a href="/admin/import">後台匯入</a>{% endif %}
+                    {% if can_manage_all %}<a href="/admin/rates">匯率 / 折扣設定</a>{% endif %}
+                    {% if can_manage_all %}<a href="/admin/price-files">年度價格表</a>{% endif %}
+                    {% if can_manage_all %}<a href="/admin/dealers">經銷商權限</a>{% endif %}
+                    {% if can_manage_all %}<a href="/admin/sales">業務資料</a>{% endif %}
+                    <a href="/quotes/new">建立報價單</a>
+                    {% if can_manage_all %}<a href="/admin/logs">操作紀錄</a>{% endif %}
+                    {% if can_manage_all %}<a href="/admin/internal-users">內部權限</a>{% endif %}
+                    {% if can_manage_all %}<a href="/admin/reset-requests">忘記密碼申請</a>{% endif %}
+                    <a href="/admin/password">修改密碼</a>
+                    <a href="/logout">登出{% if internal_display_name %}（{{ internal_display_name }}）{% endif %}</a>
+                {% elif is_dealer_logged_in %}
+                    <a href="/dealer/products">經銷商價格表</a>
+                    <a href="/dealer/export">匯出檔案</a>
+                    <a href="/quotes/new">建立報價單</a>
+                    <a href="/dealer/password">修改密碼</a>
+                    <a href="/dealer/logout">登出（{{ dealer_name }}）</a>
+                {% else %}
+                    <a href="/">入口</a>
+                    <a href="/login">內部登入</a>
+                    <a href="/dealer/login">經銷商登入</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <nav class="mobile-bottom-nav no-print" aria-label="手機快速選單">
+        {% if is_internal_logged_in %}
+            <a href="/internal/home">首頁</a>
+            {% if can_manage_all %}<a href="/products">商品</a>{% else %}<a href="/quotes/new">報價</a>{% endif %}
+            <a href="/quotes/new">報價</a>
+            {% if can_manage_all %}<a href="/admin/internal-users">權限</a>{% else %}<a href="/admin/password">密碼</a>{% endif %}
+            <a href="/logout">登出</a>
+        {% elif is_dealer_logged_in %}
+            <a href="/dealer/products">商品</a>
+            <a href="/quotes/new">報價</a>
+            <a href="/dealer/export">匯出</a>
+            <a href="/dealer/password">密碼</a>
+            <a href="/dealer/logout">登出</a>
+        {% else %}
+            <a href="/">入口</a>
+            <a href="/login">內部</a>
+            <a href="/dealer/login">經銷商</a>
+        {% endif %}
+    </nav>
+
+    <main class="container page">
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="card" style="background:#fff7ed;color:#9a3412;">{{ messages|join('；') }}</div>
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+<script>
+// v83 RWD：手機表格轉卡片時自動補上欄位名稱
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('table').forEach(function (table) {
+    if (table.closest('.quote-sheet')) return;
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    if (!headers.length) return;
+    table.querySelectorAll('tbody tr').forEach(function (row) {
+      Array.from(row.children).forEach(function (cell, index) {
+        if (!cell.getAttribute('data-label') && headers[index]) {
+          cell.setAttribute('data-label', headers[index]);
+        }
+      });
+    });
+  });
+});
+</script>
+</body>
+</html>

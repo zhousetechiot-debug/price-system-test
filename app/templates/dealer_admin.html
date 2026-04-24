@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header"><h1>經銷商權限管理</h1><p>可控制經銷商是否可查價、匯出價格表、建立自己的報價內容，並維護完整基本資料。</p></div>
+{% if message %}<div class="card">{{ message }}</div>{% endif %}
+
+<div class="card">
+  <h3>新增經銷商</h3>
+  <form method="post" class="dealer-form-grid">
+    <input type="hidden" name="action_type" value="create">
+    <div><label>經銷商</label><input name="name" required></div>
+    <div><label>等級</label><select name="level"><option>市場報價</option><option>設計師價</option><option>一級經銷商</option><option>二級經銷商</option><option>分公司</option><option>總經銷商</option></select></div>
+    <div><label>登入密碼（最多10碼，可自行修改）</label><input name="access_key" value="0000" maxlength="10"></div>
+    <div><label>統編</label><input name="tax_id"></div>
+    <div><label>地址</label><input name="address"></div>
+    <div><label>電話</label><input name="phone"></div>
+    <div><label>簽訂日期（年月）</label><input name="signed_month" placeholder="例如 2026-04"></div>
+    <div><label>業務負責人</label><input name="sales_owner"></div>
+    <div><label>付款方式</label><input name="payment_method"></div>
+    <div><label>結帳日</label><input name="closing_day"></div>
+    <div><label>付款日</label><input name="payment_day"></div>
+    <div style="grid-column:1/-1"><label>備註</label><textarea name="note"></textarea></div>
+    <div class="dealer-perm-row" style="grid-column:1/-1">
+      <label><input type="checkbox" name="can_view_products" checked> 查價</label>
+      <label><input type="checkbox" name="can_export_prices" checked> 匯出</label>
+      <label><input type="checkbox" name="can_create_quote" checked> 建立報價</label>
+    </div>
+    <div style="grid-column:1/-1"><button type="submit">新增經銷商</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <table class="table small-text dealer-table">
+    <thead><tr><th>經銷商</th><th>等級</th><th>登入密碼</th><th>統編（帳號）</th><th>地址</th><th>電話</th><th>業務負責人</th><th>付款方式</th><th>結帳日</th><th>付款日</th><th>簽訂日期</th><th>備註</th><th>查價</th><th>匯出</th><th>建立報價</th><th>操作</th></tr></thead>
+    <tbody>
+      {% for d in dealers %}
+      <tr>
+        <form method="post">
+          <input type="hidden" name="dealer_id" value="{{ d.id }}">
+          <td><input class="col-name" name="name" value="{{ d.name }}"></td>
+          <td><input class="col-level" name="level" value="{{ d.level or '' }}"></td>
+          <td><input class="col-key" name="access_key" value="{{ d.access_key or '0000' }}" maxlength="10"></td>
+          <td><input class="col-tax" name="tax_id" value="{{ d.tax_id or '' }}"></td>
+          <td><input class="col-address" name="address" value="{{ d.address or '' }}"></td>
+          <td><input class="col-phone" name="phone" value="{{ d.phone or '' }}"></td>
+          <td><input class="col-sales" name="sales_owner" value="{{ d.sales_owner or '' }}"></td>
+          <td><input class="col-pay" name="payment_method" value="{{ d.payment_method or '' }}"></td>
+          <td><input class="col-closing" name="closing_day" value="{{ d.closing_day or '' }}"></td>
+          <td><input class="col-payment" name="payment_day" value="{{ d.payment_day or '' }}"></td>
+          <td><input class="col-signed" name="signed_month" value="{{ d.signed_month or '' }}"></td>
+          <td><input class="col-note" name="note" value="{{ d.note or '' }}"></td>
+          <td><input type="checkbox" name="can_view_products" {% if d.can_view_products %}checked{% endif %}></td>
+          <td><input type="checkbox" name="can_export_prices" {% if d.can_export_prices %}checked{% endif %}></td>
+          <td><input type="checkbox" name="can_create_quote" {% if d.can_create_quote %}checked{% endif %}></td>
+          <td><button type="submit">儲存</button></td>
+        </form>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

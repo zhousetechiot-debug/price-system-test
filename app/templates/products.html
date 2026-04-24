@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.products-grid{display:grid;grid-template-columns:180px repeat(6,minmax(120px,1fr));gap:10px 18px}
+.products-grid .master{font-weight:700}
+.wide-desc{min-width:280px;max-width:420px;white-space:normal;word-break:break-word;line-height:1.45}
+.wide-special{min-width:240px;white-space:normal;word-break:break-word;line-height:1.45}
+.small-col{min-width:160px}
+</style>
+<div class="page-header"><h1>商品總表</h1><p>先勾選商品，再勾選要匯出的價格與附加欄位。只有勾選的商品會匯出。</p></div>
+
+<div class="card">
+<form method="post" action="/products/export" id="exportForm">
+  <div class="section-inline-head">
+    <h3>Excel 匯出設定</h3>
+    <div class="button-row">
+      <button type="submit">匯出 Excel</button>
+      <button type="button" id="exportPdfBtn">匯出 PDF</button>
+      <button type="button" id="printBtn">列印</button>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:12px;">
+    <div><label>產品搜尋</label><input type="text" id="productSearch" placeholder="輸入型號 / 品名 / 類別搜尋"></div>
+    <div><label>已勾選商品</label><div class="muted"><span id="selectedCount">0</span> 筆</div></div>
+  </div>
+
+  <div style="margin-bottom:12px;"><strong>價格欄位</strong></div>
+  <div class="products-grid" style="margin-bottom:18px;">
+    <label class="inline-check master"><input type="checkbox" id="checkAllLevels"> 全部勾選</label>
+    {% for value, label in export_options %}
+    <label class="inline-check"><input type="checkbox" class="level-check" name="export_levels" value="{{ value }}" {% if value=='market_price' %}checked{% endif %}> {{ label }}</label>
+    {% endfor %}
+  </div>
+
+  <div style="margin-bottom:12px;"><strong>附加欄位</strong></div>
+  <div class="products-grid" style="margin-bottom:10px;">
+    <label class="inline-check master"><input type="checkbox" id="checkAllExtras"> 全部勾選</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_description" checked> 產品描述</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_image" checked> 商品圖片</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_category" checked> 產品類別</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_status"> 狀態</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_cost_twd" checked> 成本(TWD)</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_cost_usd" checked> 來源成本(USD)</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_special_ratio"> 特殊倍數</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_outsourced_fee"> 其他加購（TWD）</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_duty_rate_pct"> 關稅 / 其他成本加成（%）</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_duty_cost_usd"> 加乘後金額（USD）</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_planning_fee" checked> 規劃費</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_setup_fee" checked> 設定費</label>
+    <label class="inline-check"><input type="checkbox" class="extra-check" name="include_profit_rate" checked> 利潤率</label>
+  </div>
+</form>
+</div>
+
+<div class="card table-sync-wrap">
+<div class="table-scroll-top" id="previewScrollTop"><div class="table-scroll-inner" id="previewScrollInner"></div></div>
+<div class="table-scroll-main" id="previewScrollMain">
+<table class="table small-text" id="previewTable">
+  <thead>
+    <tr>
+      <th style="width:44px;"><input type="checkbox" id="checkAllRows"></th>
+      <th class="col-image">圖片</th>
+      <th class="col-category"><select id="categoryFilter" style="min-width:100px;"><option value="">類別</option>{% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></th>
+      <th class="col-status"><select id="statusFilter" style="min-width:90px;"><option value="">狀態</option>{% for s in statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}</select></th>
+      <th>型號</th>
+      <th>品名</th>
+      <th class="col-description wide-desc">產品描述</th>
+      <th class="col-cost-twd">成本(TWD)</th>
+      <th class="col-cost-usd">來源成本(USD)</th>
+      <th class="col-outsource small-col">其他加購（TWD）</th>
+      <th class="col-dutyrate small-col">關稅 / 其他成本加成(%)</th>
+      <th class="col-dutyusd small-col">加乘後金額(USD)</th>
+      <th class="col-special_ratio wide-special">特殊倍數</th>
+      <th class="col-profit">利潤率</th>
+      <th class="col-planning">規劃費</th>
+      <th class="col-setup">設定費</th>
+      <th class="col-market_price">市場報價</th>
+      <th class="col-branch_price">分公司</th>
+      <th class="col-master_dealer_price">總經銷商</th>
+      <th class="col-dealer_lv1_price">一級經銷商</th>
+      <th class="col-dealer_lv2_price">二級經銷商</th>
+      <th class="col-designer_price">設計師</th>
+      <th class="col-market_min_price">市場最低價</th>
+      <th>操作</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in products %}
+    {% set profit = get_profit_rate(p.final_cost_twd, p.market_price) %}
+    <tr data-id="{{ p.id }}" data-search="{{ ((p.category or '') ~ ' ' ~ (p.status or '') ~ ' ' ~ p.model ~ ' ' ~ p.name ~ ' ' ~ (p.description or ''))|lower }}" data-category="{{ p.category or '' }}" data-status="{{ p.status or '' }}">
+      <td><input type="checkbox" class="row-check" name="selected_product_ids" value="{{ p.id }}" form="exportForm"></td>
+      <td class="col-image">{% if get_image_src(p) %}<img class="thumb hover-zoom editable-thumb" data-edit-url="/admin/products/{{ p.id }}/edit" src="{{ get_image_src(p) }}">{% else %}-{% endif %}</td>
+      <td class="col-category">{{ p.category or '' }}</td>
+      <td class="col-status">{{ p.status or '' }}</td>
+      <td>{{ p.model }}</td>
+      <td>{{ p.name }}</td>
+      <td class="col-description wide-desc">{{ p.description or '' }}</td>
+      <td class="col-cost-twd">{{ "{:,.0f}".format(p.final_cost_twd or 0) }}</td>
+      <td class="col-cost-usd">US$ {{ "{:.2f}".format(((p.final_cost_twd or 0) / (usd_rate or 32.5)) if (usd_rate or 32.5) else 0) }}</td>
+      <td class="col-outsource">{{ "{:,.0f}".format(p.outsourced_parts_fee_twd or 0) }}</td>
+      <td class="col-dutyrate">{{ "{:.1f}%".format(p.duty_rate_pct or 0) }}</td>
+      <td class="col-dutyusd">US$ {{ "{:.2f}".format(p.duty_cost_usd or 0) }}</td>
+      <td class="col-special_ratio wide-special">最低 {{ '%.3f'|format(p.special_market_min_ratio or 1) }}/設計 {{ '%.3f'|format(p.special_designer_ratio or 1) }}/一級 {{ '%.3f'|format(p.special_dealer_lv1_ratio or 1) }}/二級 {{ '%.3f'|format(p.special_dealer_lv2_ratio or 1) }}/分公司 {{ '%.3f'|format(p.special_branch_ratio or 1) }}/總經 {{ '%.3f'|format(p.special_master_ratio or 1) }}</td>
+      <td class="col-profit {% if profit < 5 %}danger-text{% endif %}">{{ "{:.1f}%".format(profit) }}</td>
+      <td class="col-planning">{{ "{:,.0f}".format(p.planning_fee_twd or 0) }}</td>
+      <td class="col-setup">{{ "{:,.0f}".format(p.setup_fee_twd or 0) }}</td>
+      <td class="col-market_price price">{{ "{:,.0f}".format(p.market_price or 0) }}</td>
+      <td class="col-branch_price">{{ "{:,.0f}".format(p.branch_price or 0) }}</td>
+      <td class="col-master_dealer_price">{{ "{:,.0f}".format(p.master_dealer_price or 0) }}</td>
+      <td class="col-dealer_lv1_price">{{ "{:,.0f}".format(p.dealer_lv1_price or 0) }}</td>
+      <td class="col-dealer_lv2_price">{{ "{:,.0f}".format(p.dealer_lv2_price or 0) }}</td>
+      <td class="col-designer_price">{{ "{:,.0f}".format(p.designer_price or 0) }}</td>
+      <td class="col-market_min_price">{{ "{:,.0f}".format(p.market_min_price or 0) }}</td>
+      <td><a class="button-link secondary" href="/admin/products/{{ p.id }}/edit">編輯</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+</div>
+
+<script>
+window.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('exportForm');
+  const search = document.getElementById('productSearch');
+  const rows = Array.from(document.querySelectorAll('#previewTable tbody tr'));
+  const categoryFilter = document.getElementById('categoryFilter');
+  const statusFilter = document.getElementById('statusFilter');
+  const selectedCount = document.getElementById('selectedCount');
+  const checkAllRows = document.getElementById('checkAllRows');
+  const checkAllLevels = document.getElementById('checkAllLevels');
+  const checkAllExtras = document.getElementById('checkAllExtras');
+  const STORAGE_KEY = 'products_export_state_v66';
+  const scrollTopBar = document.getElementById('previewScrollTop');
+  const scrollTopInner = document.getElementById('previewScrollInner');
+  const scrollMain = document.getElementById('previewScrollMain');
+
+  function colVisible(cls, show){
+    document.querySelectorAll('.col-' + cls).forEach(el => el.style.display = show ? '' : 'none');
+  }
+
+  function saveState(){
+    const data = {
+      search: search.value || '',
+      category: categoryFilter.value || '',
+      status: statusFilter.value || ''
+    };
+    form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      const key = (cb.id || cb.name || 'cb') + '::' + (cb.value || '1');
+      data[key] = cb.checked;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function loadState(){
+    try {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      if (typeof data.search === 'string') search.value = data.search;
+      if (typeof data.category === 'string') categoryFilter.value = data.category;
+      if (typeof data.status === 'string') statusFilter.value = data.status;
+      form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        const key = (cb.id || cb.name || 'cb') + '::' + (cb.value || '1');
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+          cb.checked = !!data[key];
+        }
+      });
+    } catch(e) {}
+  }
+
+  function updateMasterChecks(){
+    const levelChecks = Array.from(form.querySelectorAll('.level-check'));
+    const extraChecks = Array.from(form.querySelectorAll('.extra-check'));
+    checkAllLevels.checked = levelChecks.length > 0 && levelChecks.every(cb => cb.checked);
+    checkAllExtras.checked = extraChecks.length > 0 && extraChecks.every(cb => cb.checked);
+  }
+
+  function updateSelectedCount(){
+    const visibleRows = rows.filter(tr => tr.style.display !== 'none');
+    const visibleChecked = visibleRows.filter(tr => tr.querySelector('.row-check')?.checked).length;
+    const totalChecked = form.querySelectorAll('.row-check:checked').length;
+    selectedCount.textContent = totalChecked;
+    checkAllRows.checked = visibleRows.length > 0 && visibleChecked === visibleRows.length;
+  }
+
+  function syncTopScrollbar(){
+    if(!scrollMain || !scrollTopBar || !scrollTopInner) return;
+    scrollTopInner.style.width = scrollMain.scrollWidth + 'px';
+    scrollTopBar.scrollLeft = scrollMain.scrollLeft;
+  }
+
+  if(scrollTopBar && scrollMain){
+    scrollTopBar.addEventListener('scroll', () => { scrollMain.scrollLeft = scrollTopBar.scrollLeft; });
+    scrollMain.addEventListener('scroll', () => { scrollTopBar.scrollLeft = scrollMain.scrollLeft; });
+    window.addEventListener('resize', syncTopScrollbar);
+  }
+
+  function refreshPreview(){
+    const q = (search.value || '').trim().toLowerCase();
+    const cat = categoryFilter.value || '';
+    const st = statusFilter.value || '';
+
+    const checkedLevels = Array.from(form.querySelectorAll('.level-check:checked')).map(cb => cb.value);
+    ['market_price','branch_price','master_dealer_price','dealer_lv1_price','dealer_lv2_price','designer_price','market_min_price'].forEach(k => {
+      colVisible(k, checkedLevels.includes(k));
+    });
+
+    colVisible('description', !!form.querySelector('[name="include_description"]')?.checked);
+    colVisible('image', !!form.querySelector('[name="include_image"]')?.checked);
+    colVisible('category', !!form.querySelector('[name="include_category"]')?.checked);
+    colVisible('status', !!form.querySelector('[name="include_status"]')?.checked);
+    colVisible('cost-twd', !!form.querySelector('[name="include_cost_twd"]')?.checked);
+    colVisible('cost-usd', !!form.querySelector('[name="include_cost_usd"]')?.checked);
+    colVisible('special_ratio', !!form.querySelector('[name="include_special_ratio"]')?.checked);
+    colVisible('outsource', !!form.querySelector('[name="include_outsourced_fee"]')?.checked);
+    colVisible('dutyrate', !!form.querySelector('[name="include_duty_rate_pct"]')?.checked);
+    colVisible('dutyusd', !!form.querySelector('[name="include_duty_cost_usd"]')?.checked);
+    colVisible('planning', !!form.querySelector('[name="include_planning_fee"]')?.checked);
+    colVisible('setup', !!form.querySelector('[name="include_setup_fee"]')?.checked);
+    colVisible('profit', !!form.querySelector('[name="include_profit_rate"]')?.checked);
+
+    rows.forEach(tr => {
+      const qOk = !q || (tr.dataset.search || '').includes(q);
+      const cOk = !cat || (tr.dataset.category || '') === cat;
+      const sOk = !st || (tr.dataset.status || '') === st;
+      tr.style.display = (qOk && cOk && sOk) ? '' : 'none';
+    });
+
+    updateMasterChecks();
+    updateSelectedCount();
+    saveState();
+    syncTopScrollbar();
+  }
+
+  // Load previous state first
+  loadState();
+
+  // Regular checkbox changes
+  form.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    if (cb.id !== 'checkAllLevels' && cb.id !== 'checkAllExtras' && cb.id !== 'checkAllRows') {
+      cb.addEventListener('change', refreshPreview);
+    }
+  });
+
+  search.addEventListener('input', refreshPreview);
+  categoryFilter.addEventListener('change', refreshPreview);
+  statusFilter.addEventListener('change', refreshPreview);
+
+  checkAllLevels.addEventListener('change', function(){
+    const target = this.checked;
+    form.querySelectorAll('.level-check').forEach(cb => cb.checked = target);
+    refreshPreview();
+  });
+
+  checkAllExtras.addEventListener('change', function(){
+    const target = this.checked;
+    form.querySelectorAll('.extra-check').forEach(cb => cb.checked = target);
+    refreshPreview();
+  });
+
+  checkAllRows.addEventListener('change', function(){
+    const target = this.checked;
+    rows.filter(tr => tr.style.display !== 'none').forEach(tr => {
+      const cb = tr.querySelector('.row-check');
+      if (cb) cb.checked = target;
+    });
+    updateSelectedCount();
+    saveState();
+  });
+
+  document.getElementById('exportPdfBtn')?.addEventListener('click', () => window.open('/products/export/pdf', '_blank'));
+  document.getElementById('printBtn')?.addEventListener('click', () => window.open('/products/print', '_blank'));
+  document.querySelectorAll('.editable-thumb').forEach(img => {
+    img.addEventListener('dblclick', () => { location.href = img.dataset.editUrl; });
+  });
+
+  refreshPreview();
+});
+</script>
+{% endblock %}
