@@ -65,6 +65,15 @@ def get_image_src(product):
     return ""
 
 
+def get_company_logo_src():
+    for name in ("company_logo.png", "company_logo.jpg", "company_logo.jpeg"):
+        if (UPLOAD_DIR / name).exists():
+            return f"/uploads/{name}"
+    if (STATIC_DIR / "logo.png").exists():
+        return "/static/logo.png"
+    return ""
+
+
 def get_default_price_map(product):
     return {
         "市場報價": round(product.market_price or 0),
@@ -82,6 +91,9 @@ def ensure_sqlite_columns():
         "ALTER TABLE products ADD COLUMN image_path TEXT",
         "ALTER TABLE quotes ADD COLUMN attn VARCHAR(255)",
         "ALTER TABLE quotes ADD COLUMN currency VARCHAR(20) DEFAULT 'NTD'",
+        "ALTER TABLE quotes ADD COLUMN sales_name VARCHAR(255)",
+        "ALTER TABLE quotes ADD COLUMN sales_phone VARCHAR(100)",
+        "ALTER TABLE quotes ADD COLUMN sales_email VARCHAR(255)",
     ]
     with engine.begin() as conn:
         for sql in statements:
@@ -188,7 +200,7 @@ def admin_rates_page(request: Request, db: Session = Depends(get_db)):
     discount_map = get_price_setting_map(db)
     return templates.TemplateResponse(
         "admin_rates.html",
-        {"request": request, "rates": rates, "discount_map": discount_map, "message": None},
+        {"request": request, "rates": rates, "discount_map": discount_map, "message": None, "company_logo_src": get_company_logo_src()},
     )
 
 
@@ -234,7 +246,7 @@ def admin_rates_save(
 
     return templates.TemplateResponse(
         "admin_rates.html",
-        {"request": request, "rates": get_rate_map(db), "discount_map": get_price_setting_map(db), "message": message},
+        {"request": request, "rates": get_rate_map(db), "discount_map": get_price_setting_map(db), "message": message, "company_logo_src": get_company_logo_src()},
     )
 
 
@@ -393,6 +405,7 @@ async def admin_product_edit_post(
 def quote_new_page(request: Request, db: Session = Depends(get_db)):
     dealers = db.query(models.Dealer).order_by(models.Dealer.name).all()
     products = db.query(models.Product).order_by(models.Product.category, models.Product.model).all()
+    sales_people = db.query(models.SalesPerson).order_by(models.SalesPerson.name).all()
     return templates.TemplateResponse(
         "quote_form.html",
         {
@@ -403,6 +416,8 @@ def quote_new_page(request: Request, db: Session = Depends(get_db)):
             "qty_map": {},
             "note_text": DEFAULT_NOTE,
             "price_levels": PRICE_LEVELS,
+            "sales_people": sales_people,
+            "fd": {},
         },
     )
 
@@ -417,6 +432,9 @@ def create_or_update_quote(
     email: str,
     address: str,
     attn: str,
+    sales_name: str,
+    sales_phone: str,
+    sales_email: str,
     quote_date: str,
     quote_no: str,
     note: str,
@@ -441,6 +459,9 @@ def create_or_update_quote(
             price_level=price_level,
             note=note,
             attn=attn,
+            sales_name=sales_name,
+            sales_phone=sales_phone,
+            sales_email=sales_email,
             quote_date=parsed_date,
             currency="NTD",
         )
@@ -454,6 +475,9 @@ def create_or_update_quote(
         quote.email = email
         quote.address = address
         quote.attn = attn
+        quote.sales_name = sales_name
+        quote.sales_phone = sales_phone
+        quote.sales_email = sales_email
         quote.price_level = price_level
         quote.quote_date = parsed_date
         quote.note = note
@@ -505,6 +529,9 @@ def quote_create(
     email: str = Form(""),
     address: str = Form(""),
     attn: str = Form(""),
+    sales_name: str = Form(""),
+    sales_phone: str = Form(""),
+    sales_email: str = Form(""),
     quote_date: str = Form(""),
     quote_no: str = Form(""),
     note: str = Form(DEFAULT_NOTE),
@@ -512,7 +539,7 @@ def quote_create(
     qtys: List[int] = Form(...),
     db: Session = Depends(get_db),
 ):
-    quote = create_or_update_quote(db, None, dealer_id, customer_name, contact_name, phone, email, address, attn, quote_date, quote_no, note, product_ids, qtys)
+    quote = create_or_update_quote(db, None, dealer_id, customer_name, contact_name, phone, email, address, attn, sales_name, sales_phone, sales_email, quote_date, quote_no, note, product_ids, qtys)
     return RedirectResponse(url=f"/quotes/{quote.id}", status_code=303)
 
 
@@ -523,7 +550,7 @@ def quote_detail(quote_id: int, request: Request, db: Session = Depends(get_db))
         raise HTTPException(status_code=404, detail="找不到報價單")
     return templates.TemplateResponse(
         "quote_detail.html",
-        {"request": request, "quote": quote, "output_name": quote_output_name(quote)},
+        {"request": request, "quote": quote, "output_name": quote_output_name(quote), "company_logo_src": get_company_logo_src()},
     )
 
 
@@ -534,6 +561,7 @@ def quote_edit_page(quote_id: int, request: Request, db: Session = Depends(get_d
         raise HTTPException(status_code=404, detail="找不到報價單")
     dealers = db.query(models.Dealer).order_by(models.Dealer.name).all()
     products = db.query(models.Product).order_by(models.Product.category, models.Product.model).all()
+    sales_people = db.query(models.SalesPerson).order_by(models.SalesPerson.name).all()
     qty_map = {item.product_id: item.qty for item in quote.items}
     return templates.TemplateResponse(
         "quote_form.html",
@@ -545,6 +573,8 @@ def quote_edit_page(quote_id: int, request: Request, db: Session = Depends(get_d
             "qty_map": qty_map,
             "note_text": quote.note or DEFAULT_NOTE,
             "price_levels": PRICE_LEVELS,
+            "sales_people": sales_people,
+            "fd": {},
         },
     )
 
@@ -559,6 +589,9 @@ def quote_edit(
     email: str = Form(""),
     address: str = Form(""),
     attn: str = Form(""),
+    sales_name: str = Form(""),
+    sales_phone: str = Form(""),
+    sales_email: str = Form(""),
     quote_date: str = Form(""),
     quote_no: str = Form(""),
     note: str = Form(DEFAULT_NOTE),
@@ -569,7 +602,7 @@ def quote_edit(
     quote = db.query(models.Quote).filter(models.Quote.id == quote_id).first()
     if not quote:
         raise HTTPException(status_code=404, detail="找不到報價單")
-    quote = create_or_update_quote(db, quote, dealer_id, customer_name, contact_name, phone, email, address, attn, quote_date, quote_no, note, product_ids, qtys)
+    quote = create_or_update_quote(db, quote, dealer_id, customer_name, contact_name, phone, email, address, attn, sales_name, sales_phone, sales_email, quote_date, quote_no, note, product_ids, qtys)
     return RedirectResponse(url=f"/quotes/{quote.id}", status_code=303)
 
 

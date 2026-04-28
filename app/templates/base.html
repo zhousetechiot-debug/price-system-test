@@ -7,35 +7,67 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <header class="topbar no-print">
-        <div class="container topbar-inner">
-            <div class="brand">智崴物聯價格系統</div>
-            <nav class="nav">
+    {% set current_path = request.path %}
+    <header class="topbar no-print tech-topbar">
+        <div class="container topbar-inner topbar-v89">
+            <a class="brand brand-link brand-v89" href="{% if is_internal_logged_in %}/internal/home{% elif is_dealer_logged_in %}/dealer/products{% else %}/{% endif %}">
+                <img src="/static/logo.png" alt="智崴物聯 Logo" class="brand-logo">
+                <span class="brand-text"><strong>智崴物聯</strong><small>價格報價系統</small></span>
+            </a>
+            <button class="nav-toggle" type="button" onclick="document.body.classList.toggle('nav-open')">☰ 功能選單</button>
+            <nav class="nav nav-v89" aria-label="主選單">
                 {% if is_internal_logged_in %}
-                    {% if can_manage_all %}<a href="/internal/home">查價前台</a>{% endif %}
-                    {% if can_manage_all %}<a href="/products">商品總表</a>{% endif %}
-                    {% if can_manage_all %}<a href="/admin/products/new">手動新增商品</a>{% endif %}
-                    {% if can_manage_all %}<a href="/admin/import">後台匯入</a>{% endif %}
-                    {% if can_manage_all %}<a href="/admin/rates">匯率 / 折扣設定</a>{% endif %}
-                    {% if can_manage_all %}<a href="/admin/price-files">年度價格表</a>{% endif %}
-                    {% if can_manage_all %}<a href="/admin/dealers">經銷商權限</a>{% endif %}
-                    {% if can_manage_all %}<a href="/admin/sales">業務資料</a>{% endif %}
-                    <a href="/quotes/new">建立報價單</a>
-                    {% if can_manage_all %}<a href="/admin/logs">操作紀錄</a>{% endif %}
-                    {% if can_manage_all %}<a href="/admin/internal-users">內部權限</a>{% endif %}
-                    {% if can_manage_all %}<a href="/admin/reset-requests">忘記密碼申請</a>{% endif %}
-                    <a href="/admin/password">修改密碼</a>
-                    <a href="/logout">登出{% if internal_display_name %}（{{ internal_display_name }}）{% endif %}</a>
+                    <a class="nav-card {% if current_path.startswith('/internal') %}nav-active{% endif %}" href="/internal/home"><span class="nav-icon">🏠</span><span><strong>查價</strong><small>前台查詢</small></span></a>
+                    {% if can_manage_all %}
+                    <details class="nav-group-card {% if current_path.startswith('/products') or current_path.startswith('/admin/products') or current_path.startswith('/admin/import') or current_path.startswith('/admin/price-files') %}nav-active{% endif %}">
+                        <summary><span class="nav-icon">📦</span><span><strong>商品</strong><small>總表 / 新增 / 匯入</small></span></summary>
+                        <div class="nav-menu-v89">
+                            <a href="/products">📋 商品總表</a>
+                            <a href="/admin/products/new">➕ 手動新增商品</a>
+                            <a href="/admin/import">⬆️ 後台匯入</a>
+                            <a href="/admin/price-files">🗂 年度價格表</a>
+                        </div>
+                    </details>
+                    {% endif %}
+                    <details class="nav-group-card {% if current_path.startswith('/quotes') %}nav-active{% endif %}">
+                        <summary><span class="nav-icon">🧾</span><span><strong>報價</strong><small>建立 / 修改 / 紀錄</small></span></summary>
+                        <div class="nav-menu-v89">
+                            <a href="/quotes/new">⭐ 建立報價單</a>
+                        </div>
+                    </details>
+                    {% if can_manage_all %}
+                    <details class="nav-group-card {% if current_path.startswith('/admin/dealers') or current_path.startswith('/dealer/products') %}nav-active{% endif %}">
+                        <summary><span class="nav-icon">🤝</span><span><strong>經銷</strong><small>帳號 / 權限 / 價格</small></span></summary>
+                        <div class="nav-menu-v89">
+                            <a href="/admin/dealers">👥 經銷商權限</a>
+                            <a href="/dealer/products">💰 經銷商價格表</a>
+                        </div>
+                    </details>
+                    <details class="nav-group-card {% if current_path.startswith('/admin/rates') or current_path.startswith('/admin/sales') or current_path.startswith('/admin/internal-users') or current_path.startswith('/admin/reset-requests') or current_path.startswith('/admin/password') or current_path.startswith('/admin/logs') %}nav-active{% endif %}">
+                        <summary><span class="nav-icon">⚙️</span><span><strong>管理</strong><small>設定 / 權限 / 密碼</small></span></summary>
+                        <div class="nav-menu-v89 nav-menu-right">
+                            <a href="/admin/rates">💱 匯率 / 折扣設定</a>
+                            <a href="/admin/sales">👨‍💼 業務資料</a>
+                            <a href="/admin/logs">🕘 操作紀錄</a>
+                            <a href="/admin/internal-users">🛡 內部權限</a>
+                            <a href="/admin/reset-requests">🔑 忘記密碼申請</a>
+                            <a href="/admin/password">🔐 修改密碼</a>
+                        </div>
+                    </details>
+                    {% else %}
+                    <a class="nav-card {% if current_path.startswith('/admin/password') %}nav-active{% endif %}" href="/admin/password"><span class="nav-icon">🔐</span><span><strong>密碼</strong><small>修改密碼</small></span></a>
+                    {% endif %}
+                    <a class="nav-card nav-logout-v89" href="/logout"><span class="nav-icon">↩️</span><span><strong>登出</strong><small>{{ internal_display_name or '帳號' }}</small></span></a>
                 {% elif is_dealer_logged_in %}
-                    <a href="/dealer/products">經銷商價格表</a>
-                    <a href="/dealer/export">匯出檔案</a>
-                    <a href="/quotes/new">建立報價單</a>
-                    <a href="/dealer/password">修改密碼</a>
-                    <a href="/dealer/logout">登出（{{ dealer_name }}）</a>
+                    <a class="nav-card" href="/dealer/products"><span class="nav-icon">📦</span><span><strong>商品價格</strong><small>查詢產品</small></span></a>
+                    <a class="nav-card {% if current_path.startswith('/quotes') %}nav-active{% endif %}" href="/quotes/new"><span class="nav-icon">🧾</span><span><strong>建立報價</strong><small>快速報價</small></span></a>
+                    <a class="nav-card" href="/dealer/export"><span class="nav-icon">📤</span><span><strong>匯出</strong><small>價格檔案</small></span></a>
+                    <a class="nav-card" href="/dealer/password"><span class="nav-icon">🔐</span><span><strong>密碼</strong><small>修改密碼</small></span></a>
+                    <a class="nav-card nav-logout-v89" href="/dealer/logout"><span class="nav-icon">↩️</span><span><strong>登出</strong><small>{{ dealer_name }}</small></span></a>
                 {% else %}
-                    <a href="/">入口</a>
-                    <a href="/login">內部登入</a>
-                    <a href="/dealer/login">經銷商登入</a>
+                    <a class="nav-card" href="/"><span class="nav-icon">🏠</span><span><strong>入口</strong><small>選擇登入</small></span></a>
+                    <a class="nav-card" href="/login"><span class="nav-icon">👨‍💼</span><span><strong>內部登入</strong><small>主管 / 業務</small></span></a>
+                    <a class="nav-card" href="/dealer/login"><span class="nav-icon">🤝</span><span><strong>經銷登入</strong><small>經銷商</small></span></a>
                 {% endif %}
             </nav>
         </div>
@@ -43,21 +75,21 @@
 
     <nav class="mobile-bottom-nav no-print" aria-label="手機快速選單">
         {% if is_internal_logged_in %}
-            <a href="/internal/home">首頁</a>
-            {% if can_manage_all %}<a href="/products">商品</a>{% else %}<a href="/quotes/new">報價</a>{% endif %}
-            <a href="/quotes/new">報價</a>
-            {% if can_manage_all %}<a href="/admin/internal-users">權限</a>{% else %}<a href="/admin/password">密碼</a>{% endif %}
-            <a href="/logout">登出</a>
+            <a href="/internal/home">🏠<span>首頁</span></a>
+            {% if can_manage_all %}<a href="/products">📦<span>商品</span></a>{% else %}<a href="/quotes/new">🧾<span>報價</span></a>{% endif %}
+            <a href="/quotes/new">🧾<span>報價</span></a>
+            {% if can_manage_all %}<a href="/admin/rates">⚙️<span>管理</span></a>{% else %}<a href="/admin/password">🔐<span>密碼</span></a>{% endif %}
+            <a href="/logout">↩️<span>登出</span></a>
         {% elif is_dealer_logged_in %}
-            <a href="/dealer/products">商品</a>
-            <a href="/quotes/new">報價</a>
-            <a href="/dealer/export">匯出</a>
-            <a href="/dealer/password">密碼</a>
-            <a href="/dealer/logout">登出</a>
+            <a href="/dealer/products">📦<span>商品</span></a>
+            <a href="/quotes/new">🧾<span>報價</span></a>
+            <a href="/dealer/export">📤<span>匯出</span></a>
+            <a href="/dealer/password">🔐<span>密碼</span></a>
+            <a href="/dealer/logout">↩️<span>登出</span></a>
         {% else %}
-            <a href="/">入口</a>
-            <a href="/login">內部</a>
-            <a href="/dealer/login">經銷商</a>
+            <a href="/">🏠<span>入口</span></a>
+            <a href="/login">👨‍💼<span>內部</span></a>
+            <a href="/dealer/login">🤝<span>經銷</span></a>
         {% endif %}
     </nav>
 
@@ -71,8 +103,34 @@
     </main>
 
 <script>
-// v83 RWD：手機表格轉卡片時自動補上欄位名稱
 document.addEventListener('DOMContentLoaded', function () {
+  const navDetails = Array.from(document.querySelectorAll('.nav-group-card'));
+  navDetails.forEach(function (detail) {
+    detail.addEventListener('toggle', function () {
+      if (!detail.open) return;
+      navDetails.forEach(function (other) { if (other !== detail) other.removeAttribute('open'); });
+    });
+  });
+  document.addEventListener('click', function (event) {
+    const clickedInsideNav = event.target.closest('.nav-v89') || event.target.closest('.nav-toggle');
+    if (!clickedInsideNav) {
+      navDetails.forEach(function (detail) { detail.removeAttribute('open'); });
+      document.body.classList.remove('nav-open');
+    }
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+      navDetails.forEach(function (detail) { detail.removeAttribute('open'); });
+      document.body.classList.remove('nav-open');
+    }
+  });
+  document.querySelectorAll('.nav-menu-v89 a').forEach(function (link) {
+    link.addEventListener('click', function () {
+      navDetails.forEach(function (detail) { detail.removeAttribute('open'); });
+      document.body.classList.remove('nav-open');
+    });
+  });
+
   document.querySelectorAll('table').forEach(function (table) {
     if (table.closest('.quote-sheet')) return;
     const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());

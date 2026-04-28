@@ -518,8 +518,11 @@
   function recalc(){
     let productSubtotal = 0, planning = 0, setup = 0;
     const level = priceLevelSelect.value || '市場報價';
-    const pm = Number(document.getElementById('planning_multiplier').value || 1) || 1;
-    const sm = Number(document.getElementById('setup_multiplier').value || 1) || 1;
+    // v87 fix: 輸入 0 時下方預覽要真的等於 0，不能用 || 1。
+    const pmRaw = document.getElementById('planning_multiplier').value;
+    const smRaw = document.getElementById('setup_multiplier').value;
+    const pm = (pmRaw === '' || pmRaw === null || pmRaw === undefined) ? 1 : Number(pmRaw);
+    const sm = (smRaw === '' || smRaw === null || smRaw === undefined) ? 1 : Number(smRaw);
     getRows().forEach(tr => {
       const p = productMap[tr.querySelector('.product-id').value];
       const qty = Number(tr.querySelector('.qty-input').value || 0);

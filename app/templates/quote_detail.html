@@ -19,11 +19,11 @@
     <table class="quote-meta">
         <tr><td class="label">訂購單號</td><td>{{ quote.quote_no }}</td><td></td><td class="label">From</td><td>智崴物聯科技股份有限公司</td></tr>
         <tr><td class="label">Name :</td><td>{{ quote.customer_name }}</td><td></td><td class="label">Date :</td><td>{{ quote.quote_date }}</td></tr>
-        <tr><td class="label">Contact :</td><td>{{ quote.contact_name or '' }}</td><td></td><td class="label">ATTN :</td><td>{{ quote.attn or '' }}</td></tr>
+        <tr><td class="label">Contact :</td><td>{{ quote.contact_name or '' }}</td><td></td><td class="label">ATTN :</td><td>{{ quote.sales_name or quote.attn or '' }}</td></tr>
         <tr><td class="label">Tel :</td><td>{{ quote.phone or '' }}</td><td></td><td class="label">TEL :</td><td>{{ quote.sales_phone or '' }}</td></tr>
         <tr><td class="label">Mail :</td><td>{{ quote.email or '' }}</td><td></td><td class="label">Mail :</td><td>{{ quote.sales_email or '' }}</td></tr>
         <tr><td class="label">Add :</td><td>{{ quote.address or '' }}</td><td></td><td class="label">TEL(O) :</td><td>(02) 2600-7081</td></tr>
-        <tr><td class="label">業務 :</td><td>{{ quote.sales_name or '' }}</td><td></td><td class="label">幣別</td><td>NTD</td></tr>
+        <tr><td class="label"></td><td></td><td></td><td class="label">幣別</td><td>NTD</td></tr>
     </table>
     <table class="quote-grid quote-grid-wide">
         <thead><tr><th>項目</th><th>圖片</th><th>型號</th><th>品名</th><th>數量</th><th>單位</th><th>單價</th><th>總價</th><th>備註</th></tr></thead>

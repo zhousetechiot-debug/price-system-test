@@ -1185,8 +1185,11 @@ def quote_summary_from_request(db, form, product_ids, qtys):
     discount_map = get_price_setting_map(db)
     product_map = {p.id: p for p in db.query(models.Product).all()}
 
-    planning_multiplier = safe_number(form.get('planning_multiplier') or 1) or 1
-    setup_multiplier = safe_number(form.get('setup_multiplier') or 1) or 1
+    # v87 fix: 倍數輸入 0 時必須真的等於 0，不能被 `or 1` 自動改回 1。
+    planning_raw = form.get('planning_multiplier')
+    setup_raw = form.get('setup_multiplier')
+    planning_multiplier = 1 if planning_raw is None or str(planning_raw).strip() == '' else safe_number(planning_raw)
+    setup_multiplier = 1 if setup_raw is None or str(setup_raw).strip() == '' else safe_number(setup_raw)
     dispatch_label = form.get('dispatch_label') or '不派工'
     dispatch_fee = round(safe_number(dispatch_map().get(dispatch_label, 0)), 0)
     lock_install_qty = safe_int(form.get('lock_install_qty') or 0)
@@ -2292,6 +2295,10 @@ def create_or_update_quote(db, quote, form, product_ids, qtys):
     quote.email = form.get('email', '')
     quote.address = form.get('address', '')
     quote.attn = form.get('attn', '')
+    # v84_v86_fix: save optional sales fields into formal quote.
+    quote.sales_name = form.get('sales_name', '')
+    quote.sales_phone = form.get('sales_phone', '')
+    quote.sales_email = form.get('sales_email', '')
     quote.price_level = summary['price_level']
     quote.quote_date = parsed_date
     quote.note = summary['note']
@@ -2756,4 +2763,3 @@ if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 10000))
     flask_app.run(host="0.0.0.0", port=port)
-
